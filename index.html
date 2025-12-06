@@ -137,14 +137,6 @@
       color: #6b7280;
     }
 
-    .professor-only {
-      display: none;
-    }
-
-    .professor-only.show {
-      display: block;
-    }
-
     .submit-btn {
       width: 100%;
       padding: 14px;
@@ -260,6 +252,8 @@
     }
 
     section {
+      flex: 1;
+      width: 100%;
       background: #020617;
       border-radius: 10px;
       border: 1px solid #1f2937;
@@ -342,11 +336,6 @@
           <input type="text" id="inputName" placeholder="홍길동" required />
         </div>
 
-        <div class="form-group professor-only show" id="employeeIdGroup">
-          <label for="inputEmployeeId">사번 *</label>
-          <input type="text" id="inputEmployeeId" placeholder="예: 2024001" />
-        </div>
-
         <div class="form-group">
           <label for="inputCourse">강의명 *</label>
           <input type="text" id="inputCourse" placeholder="예: 성경개론" required />
@@ -409,7 +398,6 @@
     let currentUser = {
       role: 'professor',  // 'professor' 또는 'student'
       name: '',
-      employeeId: '',
       course: ''
     };
 
@@ -418,8 +406,6 @@
     const mainApp = document.getElementById('mainApp');
     const btnProfessor = document.getElementById('btnProfessor');
     const btnStudent = document.getElementById('btnStudent');
-    const employeeIdGroup = document.getElementById('employeeIdGroup');
-    const inputEmployeeId = document.getElementById('inputEmployeeId');
 
     // 역할 선택
     function selectRole(role) {
@@ -428,13 +414,9 @@
       if (role === 'professor') {
         btnProfessor.classList.add('active');
         btnStudent.classList.remove('active');
-        employeeIdGroup.classList.add('show');
-        inputEmployeeId.required = true;
       } else {
         btnProfessor.classList.remove('active');
         btnStudent.classList.add('active');
-        employeeIdGroup.classList.remove('show');
-        inputEmployeeId.required = false;
       }
     }
 
@@ -444,21 +426,14 @@
 
       const name = document.getElementById('inputName').value.trim();
       const course = document.getElementById('inputCourse').value.trim();
-      const employeeId = inputEmployeeId.value.trim();
 
       if (!name || !course) {
         alert('이름과 강의명을 입력해주세요.');
         return;
       }
 
-      if (currentUser.role === 'professor' && !employeeId) {
-        alert('교수는 사번을 입력해야 합니다.');
-        return;
-      }
-
       currentUser.name = name;
       currentUser.course = course;
-      currentUser.employeeId = employeeId;
 
       // 로그인 화면 숨기고 메인 앱 표시
       loginOverlay.classList.add('hidden');
@@ -511,7 +486,6 @@
         currentUser = {
           role: 'professor',
           name: '',
-          employeeId: '',
           course: ''
         };
       }
@@ -529,9 +503,9 @@
 
     // 강의실 로딩
     function loadRoom(roomName) {
-      // 교수: [교수/사번] 성명, 학생: [학생] 성명
+      // 교수: [교수] 성명, 학생: [학생] 성명
       const displayName = currentUser.role === 'professor' 
-        ? `[교수/${currentUser.employeeId}] ${currentUser.name}` 
+        ? `[교수] ${currentUser.name}` 
         : `[학생] ${currentUser.name}`;
       
       const url = buildJitsiUrl(roomName, displayName);
