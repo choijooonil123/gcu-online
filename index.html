@@ -314,7 +314,6 @@
     <div class="login-container">
       <div class="login-header">
         <h1>🎓 온라인 강의실</h1>
-        <p>김천대학교 Jitsi 기반 화상 강의 시스템</p>
       </div>
 
       <!-- 역할 선택 -->
@@ -337,6 +336,11 @@
         </div>
 
         <div class="form-group">
+          <label for="inputEmployeeId">사번 *</label>
+          <input type="password" id="inputEmployeeId" placeholder="사번 입력" required />
+        </div>
+
+        <div class="form-group">
           <label for="inputCourse">강의명 *</label>
           <input type="text" id="inputCourse" placeholder="예: 성경개론" required />
         </div>
@@ -347,7 +351,7 @@
       </form>
 
       <div class="login-footer">
-        Jitsi Meet 기반 · 최대 25명 무료 화상 강의
+        김천대학교 상담심리학과
       </div>
     </div>
   </div>
@@ -425,10 +429,11 @@
       e.preventDefault();
 
       const name = document.getElementById('inputName').value.trim();
+      const employeeId = document.getElementById('inputEmployeeId').value.trim();
       const course = document.getElementById('inputCourse').value.trim();
 
-      if (!name || !course) {
-        alert('이름과 강의명을 입력해주세요.');
+      if (!name || !employeeId || !course) {
+        alert('이름, 사번, 강의명을 모두 입력해주세요.');
         return;
       }
 
@@ -497,8 +502,8 @@
       const encodedRoom = encodeURIComponent(cleanRoom);
       const encodedName = encodeURIComponent(displayName);
       
-      // Jitsi URL with display name
-      return `https://meet.jit.si/${encodedRoom}#userInfo.displayName="${encodedName}"`;
+      // 광고 없는 무료 Jitsi 서버 사용
+      return `https://meet.ffmuc.net/${encodedRoom}#userInfo.displayName="${encodedName}"`;
     }
 
     // 강의실 로딩
