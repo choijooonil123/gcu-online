@@ -366,9 +366,8 @@
   <!-- ========== 메인 앱 ========== -->
   <div class="main-app" id="mainApp">
     <header>
-      <div>
-        <div class="title" id="headerTitle">온라인 강의실</div>
-        <div class="subtitle">Jitsi 기반 · 25명까지 무료 화상 강의</div>
+      <div class="header-left">
+        <div class="title">김천대학교 본관 6층 사무엘실</div>
       </div>
 
       <div class="user-info">
@@ -477,8 +476,6 @@
       const isProfessor = currentUser.role === 'professor';
 
       // 헤더 타이틀
-      document.getElementById('headerTitle').textContent = currentUser.course;
-
       // 사용자 배지
       const userBadge = document.getElementById('userBadge');
       const badgeIcon = document.getElementById('badgeIcon');
@@ -487,11 +484,11 @@
       if (isProfessor) {
         userBadge.className = 'user-badge professor';
         badgeIcon.textContent = '👨‍🏫';
-        badgeText.textContent = `${currentUser.name} 교수`;
+        badgeText.textContent = `${currentUser.course} : ${currentUser.name} 교수`;
       } else {
         userBadge.className = 'user-badge student';
         badgeIcon.textContent = '👨‍🎓';
-        badgeText.textContent = `${currentUser.name} 학생`;
+        badgeText.textContent = `${currentUser.course} : ${currentUser.name} 학생`;
       }
 
     }
@@ -532,8 +529,9 @@
 
     // 강의실 로딩
     function loadRoom(roomName) {
+      // 교수: [교수/사번] 성명, 학생: [학생] 성명
       const displayName = currentUser.role === 'professor' 
-        ? `[교수] ${currentUser.name}` 
+        ? `[교수/${currentUser.employeeId}] ${currentUser.name}` 
         : `[학생] ${currentUser.name}`;
       
       const url = buildJitsiUrl(roomName, displayName);
