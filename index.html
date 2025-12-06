@@ -22,6 +22,170 @@
       flex-direction: column;
     }
 
+    /* ========== 로그인 화면 ========== */
+    .login-overlay {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .login-overlay.hidden {
+      display: none;
+    }
+
+    .login-container {
+      background: #020617;
+      border: 1px solid #1f2937;
+      border-radius: 16px;
+      padding: 32px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .login-header h1 {
+      font-size: 24px;
+      margin: 0 0 8px 0;
+      color: #f1f5f9;
+    }
+
+    .login-header p {
+      font-size: 14px;
+      color: #9ca3af;
+      margin: 0;
+    }
+
+    .role-selector {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .role-btn {
+      flex: 1;
+      padding: 16px 12px;
+      border: 2px solid #374151;
+      border-radius: 12px;
+      background: transparent;
+      color: #9ca3af;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .role-btn:hover {
+      border-color: #4b5563;
+      background: #1f2937;
+    }
+
+    .role-btn.active {
+      border-color: #3b82f6;
+      background: rgba(59, 130, 246, 0.1);
+      color: #60a5fa;
+    }
+
+    .role-btn .role-icon {
+      font-size: 32px;
+    }
+
+    .role-btn .role-label {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      color: #9ca3af;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      background: #0f172a;
+      color: #e5e7eb;
+      font-size: 14px;
+      transition: border-color 0.2s ease;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+
+    .form-group input::placeholder {
+      color: #6b7280;
+    }
+
+    .professor-only {
+      display: none;
+    }
+
+    .professor-only.show {
+      display: block;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: white;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.2s ease;
+      margin-top: 8px;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    .login-footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    /* ========== 메인 레이아웃 ========== */
+    .main-app {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .main-app.show {
+      display: flex;
+    }
+
     header {
       padding: 10px 16px;
       background: #020617;
@@ -30,6 +194,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
+      flex-wrap: wrap;
     }
 
     header .title {
@@ -42,53 +207,59 @@
       color: #9ca3af;
     }
 
-    .room-form {
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-badge {
       display: flex;
       align-items: center;
       gap: 8px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-
-    .room-form label {
-      font-size: 12px;
-      color: #9ca3af;
-    }
-
-    .room-input {
-      padding: 6px 8px;
-      border-radius: 6px;
-      border: 1px solid #4b5563;
-      background: #020617;
-      color: #e5e7eb;
-      min-width: 180px;
-    }
-
-    .room-btn {
       padding: 6px 12px;
-      border-radius: 6px;
-      border: none;
-      cursor: pointer;
-      background: #2563eb;
-      color: white;
+      background: #1f2937;
+      border-radius: 8px;
       font-size: 13px;
-      font-weight: 500;
     }
 
-    .room-btn:hover {
-      background: #1d4ed8;
+    .user-badge.professor {
+      border: 1px solid #f59e0b;
+      color: #fcd34d;
+    }
+
+    .user-badge.student {
+      border: 1px solid #10b981;
+      color: #6ee7b7;
+    }
+
+    .user-badge .badge-icon {
+      font-size: 16px;
+    }
+
+    .logout-btn {
+      padding: 6px 12px;
+      border: 1px solid #ef4444;
+      border-radius: 6px;
+      background: transparent;
+      color: #f87171;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .logout-btn:hover {
+      background: rgba(239, 68, 68, 0.1);
     }
 
     main {
       flex: 1;
-      display: grid;
-      grid-template-columns: 280px 1fr;
-      gap: 8px;
+      display: flex;
       padding: 8px;
       height: calc(100% - 56px);
     }
 
-    aside, section {
+    section {
       background: #020617;
       border-radius: 10px;
       border: 1px solid #1f2937;
@@ -96,55 +267,6 @@
       display: flex;
       flex-direction: column;
       min-height: 0;
-    }
-
-    .panel-title {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 6px;
-      color: #e5e7eb;
-    }
-
-    .panel-subtitle {
-      font-size: 12px;
-      color: #9ca3af;
-      margin-bottom: 8px;
-    }
-
-    .info-row {
-      font-size: 13px;
-      margin-bottom: 4px;
-    }
-
-    .tag {
-      display: inline-block;
-      font-size: 11px;
-      padding: 2px 6px;
-      border-radius: 999px;
-      background: #0f172a;
-      border: 1px solid #1d4ed8;
-      color: #bfdbfe;
-      margin-right: 4px;
-      margin-top: 2px;
-    }
-
-    .textarea {
-      width: 100%;
-      flex: 1;
-      resize: none;
-      border-radius: 8px;
-      border: 1px solid #374151;
-      background: #020617;
-      color: #e5e7eb;
-      padding: 8px;
-      font-size: 13px;
-      line-height: 1.4;
-      min-height: 80px;
-    }
-
-    .textarea:focus {
-      outline: 1px solid #3b82f6;
-      border-color: #3b82f6;
     }
 
     .jitsi-wrapper {
@@ -184,124 +306,244 @@
     }
 
     @media (max-width: 900px) {
-      main {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr;
-      }
-      aside {
-        order: 2;
-        max-height: 260px;
-      }
-      section {
-        order: 1;
+      .user-info {
+        width: 100%;
+        justify-content: space-between;
       }
     }
   </style>
 </head>
 <body>
-  <!-- 상단 헤더 -->
-  <header>
-    <div>
-      <div class="title">김천대 본관 6층 사무엘실</div>
-      <div class="subtitle">Jitsi 기반 · 25명까지 무료 화상 강의</div>
-    </div>
 
-    <form class="room-form" id="roomForm">
-      <label for="roomInput">강의실 코드:</label>
-      <input
-        id="roomInput"
-        class="room-input"
-        type="text"
-        placeholder="예: bible-study-room"
-      />
-      <button class="room-btn" type="submit">강의실 열기 / 변경</button>
-    </form>
-  </header>
-
-  <!-- 메인 영역 -->
-  <main>
-    <!-- 왼쪽: 강의 정보 / 노트 / 출석 메모 -->
-    <aside>
-      <div class="panel-title">강의 정보</div>
-      <div class="panel-subtitle">오늘 강의 개요와 출석 메모를 기록하세요.</div>
-
-      <div class="info-row"><b>과목명</b> : <span id="courseName">온라인 강의 예시</span></div>
-      <div class="info-row"><b>진행자</b> : <span id="teacherName">CHOI JUNIL 교수</span></div>
-      <div class="info-row"><b>시간</b> : <span id="classTime">매주 ○요일 ○시</span></div>
-
-      <div style="margin: 6px 0;">
-        <span class="tag">출석 체크</span>
-        <span class="tag">질문 정리</span>
-        <span class="tag">기도제목 메모</span>
+  <!-- ========== 로그인 화면 ========== -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-container">
+      <div class="login-header">
+        <h1>🎓 온라인 강의실</h1>
+        <p>김천대학교 Jitsi 기반 화상 강의 시스템</p>
       </div>
 
-      <div class="panel-title" style="margin-top:10px;">오늘 강의 메모</div>
-      <textarea class="textarea" placeholder="강의 중 떠오르는 질문, 포인트, 기도제목 등을 자유롭게 적어 두세요. (브라우저에서만 임시 저장됨)"></textarea>
-
-      <div class="small-note">
-        ※ 이 메모는 서버에 저장되지 않습니다. 필요하면 복사해서 다른 곳에 저장하세요.
+      <!-- 역할 선택 -->
+      <div class="role-selector">
+        <button type="button" class="role-btn active" id="btnProfessor" onclick="selectRole('professor')">
+          <span class="role-icon">👨‍🏫</span>
+          <span class="role-label">교수</span>
+        </button>
+        <button type="button" class="role-btn" id="btnStudent" onclick="selectRole('student')">
+          <span class="role-icon">👨‍🎓</span>
+          <span class="role-label">학생</span>
+        </button>
       </div>
-    </aside>
 
-    <!-- 오른쪽: Jitsi 영상영역 -->
-    <section>
-      <div class="jitsi-wrapper">
-        <div class="jitsi-header">
-          <div>
-            현재 강의실: <span class="room-name-display" id="roomNameDisplay"></span>
-          </div>
-          <div class="small-note">
-            처음 접속 시 브라우저가 카메라/마이크 권한을 요청하면 <b>허용</b>을 눌러주세요.
-          </div>
+      <!-- 입력 폼 -->
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label for="inputName">이름 *</label>
+          <input type="text" id="inputName" placeholder="홍길동" required />
         </div>
 
-        <!-- Jitsi IFrame -->
-        <iframe
-          id="jitsiFrame"
-          class="jitsi-frame"
-          allow="camera; microphone; fullscreen; display-capture"
-          src=""
-        ></iframe>
+        <div class="form-group professor-only show" id="employeeIdGroup">
+          <label for="inputEmployeeId">사번 *</label>
+          <input type="text" id="inputEmployeeId" placeholder="예: 2024001" />
+        </div>
+
+        <div class="form-group">
+          <label for="inputCourse">강의명 *</label>
+          <input type="text" id="inputCourse" placeholder="예: 성경개론" required />
+        </div>
+
+        <button type="submit" class="submit-btn">
+          🚀 강의실 입장
+        </button>
+      </form>
+
+      <div class="login-footer">
+        Jitsi Meet 기반 · 최대 25명 무료 화상 강의
       </div>
-    </section>
-  </main>
+    </div>
+  </div>
+
+  <!-- ========== 메인 앱 ========== -->
+  <div class="main-app" id="mainApp">
+    <header>
+      <div>
+        <div class="title" id="headerTitle">온라인 강의실</div>
+        <div class="subtitle">Jitsi 기반 · 25명까지 무료 화상 강의</div>
+      </div>
+
+      <div class="user-info">
+        <div class="user-badge" id="userBadge">
+          <span class="badge-icon" id="badgeIcon">👨‍🏫</span>
+          <span id="badgeText">CHOI JUNIL 교수</span>
+        </div>
+        <button class="logout-btn" onclick="handleLogout()">로그아웃</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- Jitsi 영상영역 -->
+      <section>
+        <div class="jitsi-wrapper">
+          <div class="jitsi-header">
+            <div>
+              현재 강의명: <span class="room-name-display" id="roomNameDisplay">-</span>
+            </div>
+            <div class="small-note">
+              처음 접속 시 브라우저가 카메라/마이크 권한을 요청하면 <b>허용</b>을 눌러주세요.
+            </div>
+          </div>
+
+          <!-- Jitsi IFrame -->
+          <iframe
+            id="jitsiFrame"
+            class="jitsi-frame"
+            allow="camera; microphone; fullscreen; display-capture"
+            src=""
+          ></iframe>
+        </div>
+      </section>
+    </main>
+  </div>
 
   <script>
-    // 기본 강의실 이름 (원하시는 이름으로 바꾸셔도 됩니다)
-    const DEFAULT_ROOM = "prof-choi-classroom";
+    // 현재 사용자 정보
+    let currentUser = {
+      role: 'professor',  // 'professor' 또는 'student'
+      name: '',
+      employeeId: '',
+      course: ''
+    };
 
-    const roomInput = document.getElementById("roomInput");
-    const roomForm = document.getElementById("roomForm");
-    const roomNameDisplay = document.getElementById("roomNameDisplay");
-    const jitsiFrame = document.getElementById("jitsiFrame");
+    // DOM 요소
+    const loginOverlay = document.getElementById('loginOverlay');
+    const mainApp = document.getElementById('mainApp');
+    const btnProfessor = document.getElementById('btnProfessor');
+    const btnStudent = document.getElementById('btnStudent');
+    const employeeIdGroup = document.getElementById('employeeIdGroup');
+    const inputEmployeeId = document.getElementById('inputEmployeeId');
 
-    // 강의실 URL 생성 함수
-    function buildJitsiUrl(roomName) {
-      const clean = roomName.trim() || DEFAULT_ROOM;
-      // 불필요한 공백 제거 후 URL 인코딩
-      return "https://meet.jit.si/" + encodeURIComponent(clean);
+    // 역할 선택
+    function selectRole(role) {
+      currentUser.role = role;
+
+      if (role === 'professor') {
+        btnProfessor.classList.add('active');
+        btnStudent.classList.remove('active');
+        employeeIdGroup.classList.add('show');
+        inputEmployeeId.required = true;
+      } else {
+        btnProfessor.classList.remove('active');
+        btnStudent.classList.add('active');
+        employeeIdGroup.classList.remove('show');
+        inputEmployeeId.required = false;
+      }
     }
 
-    // 강의실 로딩 함수
-    function loadRoom(roomName) {
-      const url = buildJitsiUrl(roomName);
-      jitsiFrame.src = url;
-
-      // 화면에 표시용 이름
-      roomNameDisplay.textContent = roomName.trim() || DEFAULT_ROOM;
-    }
-
-    // 첫 진입 시 기본 강의실 열기
-    window.addEventListener("DOMContentLoaded", () => {
-      roomInput.value = DEFAULT_ROOM;
-      loadRoom(DEFAULT_ROOM);
-    });
-
-    // 폼 제출 시 강의실 변경
-    roomForm.addEventListener("submit", (e) => {
+    // 로그인 처리
+    function handleLogin(e) {
       e.preventDefault();
-      const value = roomInput.value || DEFAULT_ROOM;
-      loadRoom(value);
+
+      const name = document.getElementById('inputName').value.trim();
+      const course = document.getElementById('inputCourse').value.trim();
+      const employeeId = inputEmployeeId.value.trim();
+
+      if (!name || !course) {
+        alert('이름과 강의명을 입력해주세요.');
+        return;
+      }
+
+      if (currentUser.role === 'professor' && !employeeId) {
+        alert('교수는 사번을 입력해야 합니다.');
+        return;
+      }
+
+      currentUser.name = name;
+      currentUser.course = course;
+      currentUser.employeeId = employeeId;
+
+      // 로그인 화면 숨기고 메인 앱 표시
+      loginOverlay.classList.add('hidden');
+      mainApp.classList.add('show');
+
+      // UI 업데이트
+      updateMainUI();
+
+      // Jitsi 강의실 로드
+      loadRoom(course);
+    }
+
+    // 메인 UI 업데이트
+    function updateMainUI() {
+      const isProfessor = currentUser.role === 'professor';
+
+      // 헤더 타이틀
+      document.getElementById('headerTitle').textContent = currentUser.course;
+
+      // 사용자 배지
+      const userBadge = document.getElementById('userBadge');
+      const badgeIcon = document.getElementById('badgeIcon');
+      const badgeText = document.getElementById('badgeText');
+
+      if (isProfessor) {
+        userBadge.className = 'user-badge professor';
+        badgeIcon.textContent = '👨‍🏫';
+        badgeText.textContent = `${currentUser.name} 교수`;
+      } else {
+        userBadge.className = 'user-badge student';
+        badgeIcon.textContent = '👨‍🎓';
+        badgeText.textContent = `${currentUser.name} 학생`;
+      }
+
+    }
+
+    // 로그아웃
+    function handleLogout() {
+      if (confirm('강의실에서 나가시겠습니까?')) {
+        // Jitsi 프레임 초기화
+        document.getElementById('jitsiFrame').src = '';
+
+        // 폼 초기화
+        document.getElementById('loginForm').reset();
+        selectRole('professor');
+
+        // 화면 전환
+        mainApp.classList.remove('show');
+        loginOverlay.classList.remove('hidden');
+
+        // 사용자 정보 초기화
+        currentUser = {
+          role: 'professor',
+          name: '',
+          employeeId: '',
+          course: ''
+        };
+      }
+    }
+
+    // Jitsi URL 생성
+    function buildJitsiUrl(roomName, displayName) {
+      const cleanRoom = roomName.trim().replace(/\s+/g, '-');
+      const encodedRoom = encodeURIComponent(cleanRoom);
+      const encodedName = encodeURIComponent(displayName);
+      
+      // Jitsi URL with display name
+      return `https://meet.jit.si/${encodedRoom}#userInfo.displayName="${encodedName}"`;
+    }
+
+    // 강의실 로딩
+    function loadRoom(roomName) {
+      const displayName = currentUser.role === 'professor' 
+        ? `[교수] ${currentUser.name}` 
+        : `[학생] ${currentUser.name}`;
+      
+      const url = buildJitsiUrl(roomName, displayName);
+      document.getElementById('jitsiFrame').src = url;
+      document.getElementById('roomNameDisplay').textContent = roomName;
+    }
+
+    // 페이지 로드 시 초기화
+    window.addEventListener('DOMContentLoaded', () => {
+      selectRole('professor');
     });
   </script>
 </body>
