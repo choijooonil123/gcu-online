@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>온라인 강의실 - Jitsi 기반</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        "Noto Sans KR", sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 10px 16px;
+      background: #020617;
+      border-bottom: 1px solid #1f2937;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    header .title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    header .subtitle {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .room-form {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .room-form label {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .room-input {
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #4b5563;
+      background: #020617;
+      color: #e5e7eb;
+      min-width: 180px;
+    }
+
+    .room-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      background: #2563eb;
+      color: white;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .room-btn:hover {
+      background: #1d4ed8;
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 8px;
+      padding: 8px;
+      height: calc(100% - 56px);
+    }
+
+    aside, section {
+      background: #020617;
+      border-radius: 10px;
+      border: 1px solid #1f2937;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .panel-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #e5e7eb;
+    }
+
+    .panel-subtitle {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-bottom: 8px;
+    }
+
+    .info-row {
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: #0f172a;
+      border: 1px solid #1d4ed8;
+      color: #bfdbfe;
+      margin-right: 4px;
+      margin-top: 2px;
+    }
+
+    .textarea {
+      width: 100%;
+      flex: 1;
+      resize: none;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #e5e7eb;
+      padding: 8px;
+      font-size: 13px;
+      line-height: 1.4;
+      min-height: 80px;
+    }
+
+    .textarea:focus {
+      outline: 1px solid #3b82f6;
+      border-color: #3b82f6;
+    }
+
+    .jitsi-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .jitsi-header {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .room-name-display {
+      font-weight: 500;
+      color: #60a5fa;
+    }
+
+    .jitsi-frame {
+      flex: 1;
+      border: none;
+      border-radius: 8px;
+      background: black;
+      width: 100%;
+    }
+
+    .small-note {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
+      aside {
+        order: 2;
+        max-height: 260px;
+      }
+      section {
+        order: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 상단 헤더 -->
+  <header>
+    <div>
+      <div class="title">김천대 본관 6층 사무엘실</div>
+      <div class="subtitle">Jitsi 기반 · 25명까지 무료 화상 강의</div>
+    </div>
+
+    <form class="room-form" id="roomForm">
+      <label for="roomInput">강의실 코드:</label>
+      <input
+        id="roomInput"
+        class="room-input"
+        type="text"
+        placeholder="예: bible-study-room"
+      />
+      <button class="room-btn" type="submit">강의실 열기 / 변경</button>
+    </form>
+  </header>
+
+  <!-- 메인 영역 -->
+  <main>
+    <!-- 왼쪽: 강의 정보 / 노트 / 출석 메모 -->
+    <aside>
+      <div class="panel-title">강의 정보</div>
+      <div class="panel-subtitle">오늘 강의 개요와 출석 메모를 기록하세요.</div>
+
+      <div class="info-row"><b>과목명</b> : <span id="courseName">온라인 강의 예시</span></div>
+      <div class="info-row"><b>진행자</b> : <span id="teacherName">CHOI JUNIL 교수</span></div>
+      <div class="info-row"><b>시간</b> : <span id="classTime">매주 ○요일 ○시</span></div>
+
+      <div style="margin: 6px 0;">
+        <span class="tag">출석 체크</span>
+        <span class="tag">질문 정리</span>
+        <span class="tag">기도제목 메모</span>
+      </div>
+
+      <div class="panel-title" style="margin-top:10px;">오늘 강의 메모</div>
+      <textarea class="textarea" placeholder="강의 중 떠오르는 질문, 포인트, 기도제목 등을 자유롭게 적어 두세요. (브라우저에서만 임시 저장됨)"></textarea>
+
+      <div class="small-note">
+        ※ 이 메모는 서버에 저장되지 않습니다. 필요하면 복사해서 다른 곳에 저장하세요.
+      </div>
+    </aside>
+
+    <!-- 오른쪽: Jitsi 영상영역 -->
+    <section>
+      <div class="jitsi-wrapper">
+        <div class="jitsi-header">
+          <div>
+            현재 강의실: <span class="room-name-display" id="roomNameDisplay"></span>
+          </div>
+          <div class="small-note">
+            처음 접속 시 브라우저가 카메라/마이크 권한을 요청하면 <b>허용</b>을 눌러주세요.
+          </div>
+        </div>
+
+        <!-- Jitsi IFrame -->
+        <iframe
+          id="jitsiFrame"
+          class="jitsi-frame"
+          allow="camera; microphone; fullscreen; display-capture"
+          src=""
+        ></iframe>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // 기본 강의실 이름 (원하시는 이름으로 바꾸셔도 됩니다)
+    const DEFAULT_ROOM = "prof-choi-classroom";
+
+    const roomInput = document.getElementById("roomInput");
+    const roomForm = document.getElementById("roomForm");
+    const roomNameDisplay = document.getElementById("roomNameDisplay");
+    const jitsiFrame = document.getElementById("jitsiFrame");
+
+    // 강의실 URL 생성 함수
+    function buildJitsiUrl(roomName) {
+      const clean = roomName.trim() || DEFAULT_ROOM;
+      // 불필요한 공백 제거 후 URL 인코딩
+      return "https://meet.jit.si/" + encodeURIComponent(clean);
+    }
+
+    // 강의실 로딩 함수
+    function loadRoom(roomName) {
+      const url = buildJitsiUrl(roomName);
+      jitsiFrame.src = url;
+
+      // 화면에 표시용 이름
+      roomNameDisplay.textContent = roomName.trim() || DEFAULT_ROOM;
+    }
+
+    // 첫 진입 시 기본 강의실 열기
+    window.addEventListener("DOMContentLoaded", () => {
+      roomInput.value = DEFAULT_ROOM;
+      loadRoom(DEFAULT_ROOM);
+    });
+
+    // 폼 제출 시 강의실 변경
+    roomForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const value = roomInput.value || DEFAULT_ROOM;
+      loadRoom(value);
+    });
+  </script>
+</body>
+</html>
