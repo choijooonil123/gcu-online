@@ -817,6 +817,28 @@
       color: #9ca3af;
     }
 
+    .attendance-status.not-checked {
+      background: rgba(75, 85, 99, 0.2);
+      color: #6b7280;
+      border: 1px dashed #4b5563;
+    }
+
+    .attendance-status.attending {
+      background: rgba(59, 130, 246, 0.3);
+      color: #60a5fa;
+      animation: pulse-blue 2s infinite;
+    }
+
+    @keyframes pulse-blue {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+      50% { box-shadow: 0 0 8px 2px rgba(59, 130, 246, 0.3); }
+    }
+
+    .attendance-status.partial {
+      background: rgba(168, 85, 247, 0.2);
+      color: #c084fc;
+    }
+
     .time-info {
       font-size: 11px;
       color: #6b7280;
@@ -2189,6 +2211,9 @@
 
     function renderCourseWeekAttendance(course, attendanceInfo, week) {
       const records = attendanceInfo && attendanceInfo.records ? attendanceInfo.records[week] : null;
+      const isClassActive = attendanceInfo?.isClassActive && attendanceInfo?.currentWeek == week;
+      const classStartTime = attendanceInfo?.classStartTime ? new Date(attendanceInfo.classStartTime) : null;
+      const classEndTime = attendanceInfo?.classEndTime ? new Date(attendanceInfo.classEndTime) : null;
       
       let html = `<div class="attendance-table-wrapper" id="attendanceTable_${course.name.replace(/\s/g, '_')}">`;
       html += `<table class="mini-attendance-table">`;
@@ -2197,57 +2222,106 @@
         <th>이름</th>
         <th style="width:100px;">입장시간</th>
         <th style="width:100px;">퇴장시간</th>
-        <th style="width:80px;">상태</th>
+        <th style="width:100px;">출석률</th>
       </tr></thead>`;
       html += `<tbody>`;
 
       if (course.students.length === 0) {
         html += `<tr><td colspan="5" style="text-align:center;color:#6b7280;padding:20px;">등록된 수강생이 없습니다.</td></tr>`;
       } else {
-        let presentCount = 0, lateCount = 0, earlyLeaveCount = 0, absentCount = 0;
+        let attendingCount = 0, partialCount = 0, absentCount = 0, notCheckedCount = 0;
 
         course.students.forEach((name, index) => {
-          const record = records ? records[name] : null;
-          const status = record ? record.status : 'pending';
-
-          if (status === 'present') presentCount++;
-          else if (status === 'late') lateCount++;
-          else if (status === 'early-leave') earlyLeaveCount++;
-          else if (status === 'absent') absentCount++;
-
-          const statusLabel = {
-            'present': '출석',
-            'late': '지각',
-            'early-leave': '조퇴',
-            'absent': '결석',
-            'pending': '미정'
-          };
+          const record = records ? records[name] : { joinTime: null, leaveTime: null, status: 'not-checked' };
+          
+          // 실시간 상태 계산
+          const realTimeStatus = calculateRealTimeStatusForCourse(record, isClassActive, classStartTime, classEndTime);
+          
+          if (realTimeStatus.type === 'attending') attendingCount++;
+          else if (realTimeStatus.type === 'partial') partialCount++;
+          else if (realTimeStatus.type === 'absent') absentCount++;
+          else notCheckedCount++;
 
           const joinTime = record && record.joinTime ? formatTimeFromString(record.joinTime) : '-';
-          const leaveTime = record && record.leaveTime ? formatTimeFromString(record.leaveTime) : '-';
+          const leaveTime = record && record.leaveTime ? formatTimeFromString(record.leaveTime) : (isClassActive && record.joinTime ? '수업중' : '-');
 
           html += `<tr>
             <td>${index + 1}</td>
             <td>${name}</td>
             <td style="font-size:11px;color:#6b7280;">${joinTime}</td>
             <td style="font-size:11px;color:#6b7280;">${leaveTime}</td>
-            <td><span class="attendance-status ${status}">${statusLabel[status]}</span></td>
+            <td><span class="attendance-status ${realTimeStatus.type}">${realTimeStatus.label}</span></td>
           </tr>`;
         });
 
         // 요약 행
+        const summaryParts = [];
+        if (attendingCount > 0) summaryParts.push(`<span class="attendance-status attending">출석중 ${attendingCount}</span>`);
+        if (partialCount > 0) summaryParts.push(`<span class="attendance-status partial">부분출석 ${partialCount}</span>`);
+        if (absentCount > 0) summaryParts.push(`<span class="attendance-status absent">결석 ${absentCount}</span>`);
+        if (notCheckedCount > 0) summaryParts.push(`<span class="attendance-status not-checked">미출결 ${notCheckedCount}</span>`);
+        
         html += `<tr style="background:#0f172a;">
           <td colspan="5" style="padding:10px;">
-            <span class="attendance-status present">출석 ${presentCount}</span>
-            <span class="attendance-status late" style="margin-left:8px;">지각 ${lateCount}</span>
-            <span class="attendance-status early-leave" style="margin-left:8px;">조퇴 ${earlyLeaveCount}</span>
-            <span class="attendance-status absent" style="margin-left:8px;">결석 ${absentCount}</span>
+            ${summaryParts.join('<span style="margin:0 8px;"></span>')}
           </td>
         </tr>`;
       }
 
       html += `</tbody></table></div>`;
       return html;
+    }
+    
+    // 강의별 실시간 상태 계산 (전체 출석부용)
+    function calculateRealTimeStatusForCourse(record, isClassActive, classStartTime, classEndTime) {
+      const now = new Date();
+      
+      if (!record || !record.joinTime) {
+        if (isClassActive) {
+          return { type: 'not-checked', label: '미출결' };
+        } else if (classEndTime) {
+          return { type: 'absent', label: '결석' };
+        }
+        return { type: 'not-checked', label: '미출결' };
+      }
+      
+      const joinTime = new Date(record.joinTime);
+      const leaveTime = record.leaveTime ? new Date(record.leaveTime) : null;
+      
+      if (isClassActive && classStartTime) {
+        if (!leaveTime) {
+          return { type: 'attending', label: '🟢 출석중' };
+        } else {
+          const totalClassTime = now - classStartTime;
+          const attendedTime = leaveTime - joinTime;
+          const percent = Math.round((attendedTime / totalClassTime) * 100);
+          return { type: 'partial', label: `${Math.min(percent, 100)}% 출석` };
+        }
+      }
+      
+      if (classEndTime && classStartTime) {
+        const totalClassTime = classEndTime - classStartTime;
+        const effectiveLeaveTime = leaveTime || classEndTime;
+        const effectiveJoinTime = joinTime < classStartTime ? classStartTime : joinTime;
+        let attendedTime = effectiveLeaveTime - effectiveJoinTime;
+        if (attendedTime < 0) attendedTime = 0;
+        
+        const percent = record.attendancePercent !== undefined ? record.attendancePercent : Math.round((attendedTime / totalClassTime) * 100);
+        
+        if (percent >= 100) return { type: 'attending', label: '✅ 100% 출석' };
+        if (percent > 0) return { type: 'partial', label: `${percent}% 출석` };
+        return { type: 'absent', label: '결석' };
+      }
+      
+      // 레거시 상태
+      if (record.attendancePercent !== undefined) {
+        const percent = record.attendancePercent;
+        if (percent >= 100) return { type: 'attending', label: '✅ 100% 출석' };
+        if (percent > 0) return { type: 'partial', label: `${percent}% 출석` };
+        return { type: 'absent', label: '결석' };
+      }
+      
+      return { type: 'not-checked', label: '미출결' };
     }
 
     function showWeekAttendance(courseName, week, btn) {
@@ -2290,13 +2364,6 @@
       }
 
       let csv = '';
-      const statusLabel = {
-        'present': '출석',
-        'late': '지각',
-        'early-leave': '조퇴',
-        'absent': '결석',
-        'pending': '미정'
-      };
 
       coursesToExport.forEach(course => {
         const attendanceKey = `attendance_${course.name}`;
@@ -2314,15 +2381,20 @@
           if (!records && selectedWeek === 'all') return;
 
           csv += `\n[${course.name}] ${week}주차 - 담당교수: ${course.professor}\n`;
-          csv += `번호,이름,입장시간,퇴장시간,출석상태\n`;
+          csv += `번호,이름,입장시간,퇴장시간,출석률,상태\n`;
+
+          const isClassActive = attendanceInfo?.isClassActive && attendanceInfo?.currentWeek == week;
+          const classStartTime = attendanceInfo?.classStartTime ? new Date(attendanceInfo.classStartTime) : null;
+          const classEndTime = attendanceInfo?.classEndTime ? new Date(attendanceInfo.classEndTime) : null;
 
           course.students.forEach((name, index) => {
-            const record = records ? records[name] : null;
-            const status = record ? record.status : 'pending';
+            const record = records ? records[name] : { joinTime: null, leaveTime: null, status: 'not-checked' };
+            const realTimeStatus = calculateRealTimeStatusForCourse(record, isClassActive, classStartTime, classEndTime);
             const joinTime = record && record.joinTime ? formatTimeFromString(record.joinTime) : '-';
             const leaveTime = record && record.leaveTime ? formatTimeFromString(record.leaveTime) : '-';
+            const percent = record && record.attendancePercent !== undefined ? record.attendancePercent + '%' : '-';
 
-            csv += `${index + 1},${name},${joinTime},${leaveTime},${statusLabel[status]}\n`;
+            csv += `${index + 1},${name},${joinTime},${leaveTime},${percent},${realTimeStatus.label.replace(/[🟢✅]/g, '')}\n`;
           });
         });
       });
@@ -2799,35 +2871,52 @@
 
     function calculateFinalAttendance() {
       const week = attendanceData.currentWeek;
+      if (!attendanceData.records[week]) {
+        attendanceData.records[week] = {};
+      }
       const records = attendanceData.records[week];
-      const startTime = attendanceData.classStartTime;
-      const endTime = attendanceData.classEndTime;
-      const lateThreshold = 15 * 60 * 1000; // 15분 (밀리초)
+      const startTime = new Date(attendanceData.classStartTime);
+      const endTime = new Date(attendanceData.classEndTime);
+      const totalClassTime = endTime - startTime;
       
       attendanceData.students.forEach(name => {
+        if (!records[name]) {
+          // 기록이 없으면 새로 생성
+          records[name] = { joinTime: null, leaveTime: null, status: 'not-checked' };
+        }
+        
         const record = records[name];
-        if (!record) return;
         
         if (!record.joinTime) {
           // 입장 기록 없음 = 결석
           record.status = 'absent';
+          record.attendancePercent = 0;
         } else {
           const joinTime = new Date(record.joinTime);
           const leaveTime = record.leaveTime ? new Date(record.leaveTime) : endTime;
-          const joinDelay = joinTime - startTime;
           
-          if (leaveTime < endTime) {
-            // 수업 종료 전에 나감 = 조퇴
-            record.status = 'early-leave';
-          } else if (joinDelay > lateThreshold) {
-            // 15분 이후 입장 = 지각 (하지만 15분 이후도 참여했으면 지각 처리)
-            record.status = 'late';
-          } else if (joinDelay > 0 && joinDelay <= lateThreshold) {
-            // 수업 시작 후 15분 이내 입장 = 지각
-            record.status = 'late';
-          } else {
-            // 정상 출석
+          // 유효 입장 시간 (수업 시작 전에 들어왔으면 수업 시작 시간으로)
+          const effectiveJoinTime = joinTime < startTime ? startTime : joinTime;
+          // 유효 퇴장 시간 (수업 종료 후에 나갔으면 수업 종료 시간으로)
+          const effectiveLeaveTime = leaveTime > endTime ? endTime : leaveTime;
+          
+          // 참석 시간 계산
+          let attendedTime = effectiveLeaveTime - effectiveJoinTime;
+          if (attendedTime < 0) attendedTime = 0;
+          
+          // 출석률 계산
+          const percent = Math.round((attendedTime / totalClassTime) * 100);
+          record.attendancePercent = Math.min(percent, 100);
+          
+          // 상태 결정 (퍼센트 기반)
+          if (percent >= 100) {
             record.status = 'present';
+          } else if (percent >= 80) {
+            record.status = 'late'; // 80% 이상이면 지각 처리
+          } else if (percent > 0) {
+            record.status = 'early-leave'; // 80% 미만이면 조퇴
+          } else {
+            record.status = 'absent';
           }
         }
       });
@@ -2868,7 +2957,8 @@
         attendanceData.records[week][studentName] = {
           joinTime: null,
           leaveTime: null,
-          status: 'absent'
+          status: 'not-checked',
+          attendancePercent: 0
         };
       }
       
@@ -2892,14 +2982,65 @@
 
     // ========== 출석부 표시 ==========
     
+    let attendanceRefreshInterval = null;
+    
     function openAttendanceModal() {
       document.getElementById('attendanceModal').classList.add('show');
       document.getElementById('weekSelect').value = attendanceData.currentWeek;
-      renderAttendanceTable();
+      
+      // Firebase에서 최신 데이터 로드 후 렌더링
+      refreshAttendanceFromFirebase();
+      
+      // 수업 중이면 5초마다 자동 새로고침
+      if (attendanceData.isClassActive) {
+        startAttendanceAutoRefresh();
+      }
     }
 
     function closeAttendanceModal() {
       document.getElementById('attendanceModal').classList.remove('show');
+      stopAttendanceAutoRefresh();
+    }
+    
+    function startAttendanceAutoRefresh() {
+      stopAttendanceAutoRefresh();
+      attendanceRefreshInterval = setInterval(() => {
+        if (attendanceData.isClassActive) {
+          refreshAttendanceFromFirebase();
+        } else {
+          stopAttendanceAutoRefresh();
+        }
+      }, 5000); // 5초마다 새로고침
+    }
+    
+    function stopAttendanceAutoRefresh() {
+      if (attendanceRefreshInterval) {
+        clearInterval(attendanceRefreshInterval);
+        attendanceRefreshInterval = null;
+      }
+    }
+    
+    async function refreshAttendanceFromFirebase() {
+      if (firebaseEnabled && db && currentUser.course) {
+        try {
+          const firebaseKey = currentUser.course.replace(/[.#$\/\[\]]/g, '_');
+          const snapshot = await db.ref(`attendance/${firebaseKey}`).once('value');
+          const fbData = snapshot.val();
+          
+          if (fbData) {
+            // Firebase 데이터로 로컬 데이터 업데이트
+            if (fbData.records) {
+              attendanceData.records = fbData.records;
+            }
+            if (fbData.students) {
+              attendanceData.students = fbData.students;
+            }
+          }
+        } catch (e) {
+          console.error('Firebase 출석 데이터 새로고침 오류:', e);
+        }
+      }
+      renderAttendanceTable();
     }
 
     function renderAttendanceTable() {
@@ -2913,83 +3054,151 @@
         return;
       }
       
-      let presentCount = 0, lateCount = 0, earlyLeaveCount = 0, absentCount = 0;
+      let attendingCount = 0, partialCount = 0, absentCount = 0, notCheckedCount = 0;
       
       tbody.innerHTML = attendanceData.students.map((name, index) => {
-        const record = records[name] || { joinTime: null, leaveTime: null, status: 'pending' };
-        const status = record.status || 'pending';
+        const record = records[name] || { joinTime: null, leaveTime: null, status: 'not-checked' };
+        
+        // 실시간 출석 상태 계산
+        const realTimeStatus = calculateRealTimeStatus(record, week);
         
         // 카운트
-        if (status === 'present') presentCount++;
-        else if (status === 'late') lateCount++;
-        else if (status === 'early-leave') earlyLeaveCount++;
-        else if (status === 'absent') absentCount++;
-        
-        const statusLabel = {
-          'present': '출석',
-          'late': '지각',
-          'early-leave': '조퇴',
-          'absent': '결석',
-          'pending': '미정'
-        };
+        if (realTimeStatus.type === 'attending') attendingCount++;
+        else if (realTimeStatus.type === 'partial') partialCount++;
+        else if (realTimeStatus.type === 'absent') absentCount++;
+        else if (realTimeStatus.type === 'not-checked') notCheckedCount++;
         
         return `
           <tr>
             <td>${index + 1}</td>
             <td>${name}</td>
             <td class="time-info">${record.joinTime ? formatTime(new Date(record.joinTime)) : '-'}</td>
-            <td class="time-info">${record.leaveTime ? formatTime(new Date(record.leaveTime)) : '-'}</td>
+            <td class="time-info">${record.leaveTime ? formatTime(new Date(record.leaveTime)) : (attendanceData.isClassActive && record.joinTime ? '수업중' : '-')}</td>
             <td>
-              <span class="attendance-status ${status}">${statusLabel[status]}</span>
+              <span class="attendance-status ${realTimeStatus.type}">${realTimeStatus.label}</span>
             </td>
           </tr>
         `;
       }).join('');
       
       // 요약 표시
-      document.getElementById('attendanceSummary').innerHTML = `
-        <div class="summary-item">
-          <span class="attendance-status present">출석</span>
-          <span class="count">${presentCount}명</span>
-        </div>
-        <div class="summary-item">
-          <span class="attendance-status late">지각</span>
-          <span class="count">${lateCount}명</span>
-        </div>
-        <div class="summary-item">
-          <span class="attendance-status early-leave">조퇴</span>
-          <span class="count">${earlyLeaveCount}명</span>
-        </div>
-        <div class="summary-item">
-          <span class="attendance-status absent">결석</span>
-          <span class="count">${absentCount}명</span>
-        </div>
-        <div class="summary-item" style="margin-left:auto;">
-          총 <span class="count">${attendanceData.students.length}명</span>
-        </div>
-      `;
+      const summaryHtml = [];
+      if (attendingCount > 0) {
+        summaryHtml.push(`<div class="summary-item"><span class="attendance-status attending">출석중</span><span class="count">${attendingCount}명</span></div>`);
+      }
+      if (partialCount > 0) {
+        summaryHtml.push(`<div class="summary-item"><span class="attendance-status partial">부분출석</span><span class="count">${partialCount}명</span></div>`);
+      }
+      if (absentCount > 0) {
+        summaryHtml.push(`<div class="summary-item"><span class="attendance-status absent">결석</span><span class="count">${absentCount}명</span></div>`);
+      }
+      if (notCheckedCount > 0) {
+        summaryHtml.push(`<div class="summary-item"><span class="attendance-status not-checked">미출결</span><span class="count">${notCheckedCount}명</span></div>`);
+      }
+      summaryHtml.push(`<div class="summary-item" style="margin-left:auto;">총 <span class="count">${attendanceData.students.length}명</span></div>`);
+      
+      document.getElementById('attendanceSummary').innerHTML = summaryHtml.join('');
+    }
+    
+    // 실시간 출석 상태 계산
+    function calculateRealTimeStatus(record, week) {
+      const now = new Date();
+      const isCurrentWeek = (week === attendanceData.currentWeek);
+      const isClassActive = attendanceData.isClassActive && isCurrentWeek;
+      const classStartTime = attendanceData.classStartTime ? new Date(attendanceData.classStartTime) : null;
+      const classEndTime = attendanceData.classEndTime ? new Date(attendanceData.classEndTime) : null;
+      
+      // 입장 기록이 없는 경우
+      if (!record.joinTime) {
+        if (isClassActive) {
+          // 수업 중인데 아직 입장 안함
+          return { type: 'not-checked', label: '미출결' };
+        } else if (classEndTime && isCurrentWeek) {
+          // 수업 종료됐는데 기록 없음 = 결석
+          return { type: 'absent', label: '결석' };
+        } else {
+          // 아직 수업 시작 안함 or 다른 주차
+          return { type: 'not-checked', label: '미출결' };
+        }
+      }
+      
+      const joinTime = new Date(record.joinTime);
+      const leaveTime = record.leaveTime ? new Date(record.leaveTime) : null;
+      
+      // 수업이 진행 중인 경우
+      if (isClassActive && classStartTime) {
+        if (!leaveTime) {
+          // 입장했고 아직 퇴장 안함 = 출석중
+          return { type: 'attending', label: '🟢 출석중' };
+        } else {
+          // 입장했다가 나감 (조퇴 상태로 출석중에 표시)
+          const totalClassTime = now - classStartTime;
+          const attendedTime = leaveTime - joinTime;
+          const percent = Math.round((attendedTime / totalClassTime) * 100);
+          return { type: 'partial', label: `${Math.min(percent, 100)}% 출석` };
+        }
+      }
+      
+      // 수업이 종료된 경우 (현재 주차)
+      if (classEndTime && isCurrentWeek && classStartTime) {
+        const totalClassTime = classEndTime - classStartTime;
+        const effectiveLeaveTime = leaveTime || classEndTime;
+        const effectiveJoinTime = joinTime < classStartTime ? classStartTime : joinTime;
+        
+        // 실제 참석 시간 계산
+        let attendedTime = effectiveLeaveTime - effectiveJoinTime;
+        if (attendedTime < 0) attendedTime = 0;
+        
+        const percent = Math.round((attendedTime / totalClassTime) * 100);
+        
+        if (percent >= 100) {
+          return { type: 'attending', label: '✅ 100% 출석' };
+        } else if (percent > 0) {
+          return { type: 'partial', label: `${percent}% 출석` };
+        } else {
+          return { type: 'absent', label: '결석' };
+        }
+      }
+      
+      // 다른 주차이고 기록이 있는 경우 (과거 데이터)
+      if (record.status) {
+        // 기존 저장된 상태가 있으면 퍼센트로 변환해서 표시
+        if (record.attendancePercent !== undefined) {
+          const percent = record.attendancePercent;
+          if (percent >= 100) return { type: 'attending', label: '✅ 100% 출석' };
+          if (percent > 0) return { type: 'partial', label: `${percent}% 출석` };
+          return { type: 'absent', label: '결석' };
+        }
+        // 레거시 상태 변환
+        const legacyMap = {
+          'present': { type: 'attending', label: '✅ 100% 출석' },
+          'late': { type: 'partial', label: '지각' },
+          'early-leave': { type: 'partial', label: '조퇴' },
+          'absent': { type: 'absent', label: '결석' },
+          'pending': { type: 'not-checked', label: '미출결' },
+          'not-checked': { type: 'not-checked', label: '미출결' }
+        };
+        return legacyMap[record.status] || { type: 'not-checked', label: '미출결' };
+      }
+      
+      return { type: 'not-checked', label: '미출결' };
     }
 
     function exportAttendance() {
-      const week = document.getElementById('weekSelect').value;
+      const week = parseInt(document.getElementById('weekSelect').value);
       const records = attendanceData.records[week] || {};
       
-      let csv = '번호,이름,입장시간,퇴장시간,출석상태\n';
+      let csv = '번호,이름,입장시간,퇴장시간,출석률,출석상태\n';
       
       attendanceData.students.forEach((name, index) => {
-        const record = records[name] || {};
-        const statusLabel = {
-          'present': '출석',
-          'late': '지각',
-          'early-leave': '조퇴',
-          'absent': '결석',
-          'pending': '미정'
-        };
+        const record = records[name] || { joinTime: null, leaveTime: null, status: 'not-checked', attendancePercent: 0 };
+        const realTimeStatus = calculateRealTimeStatus(record, week);
         
         csv += `${index + 1},${name},`;
         csv += `${record.joinTime ? formatTime(new Date(record.joinTime)) : '-'},`;
         csv += `${record.leaveTime ? formatTime(new Date(record.leaveTime)) : '-'},`;
-        csv += `${statusLabel[record.status] || '미정'}\n`;
+        csv += `${record.attendancePercent !== undefined ? record.attendancePercent + '%' : '-'},`;
+        csv += `${realTimeStatus.label.replace(/[🟢✅]/g, '')}\n`;
       });
       
       const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -3024,7 +3233,8 @@
             data.records[data.currentWeek][currentUser.name] = {
               joinTime: null,
               leaveTime: null,
-              status: 'absent'
+              status: 'not-checked',
+              attendancePercent: 0
             };
           }
           if (!data.records[data.currentWeek][currentUser.name].joinTime) {
@@ -3158,30 +3368,35 @@
         }
         
         if (record) {
-          weekRecords.push({ week: weekKey, ...record });
+          weekRecords.push({ week: weekKey, weekNum: week, ...record });
           
-          switch (record.status) {
-            case 'present': present++; break;
-            case 'late': late++; break;
-            case 'early-leave': earlyLeave++; break;
-            case 'absent': absent++; break;
-          }
+          // 퍼센트 기반으로 통계 계산
+          const percent = record.attendancePercent !== undefined ? record.attendancePercent : 
+            (record.status === 'present' ? 100 : record.status === 'absent' ? 0 : 50);
+          
+          if (percent >= 100) present++;
+          else if (percent > 0) partialCount++;
+          else absent++;
         }
       }
       
-      // 요약 표시
+      let partialCount = 0; // 부분출석 카운트 추가
+      weekRecords.forEach(r => {
+        const percent = r.attendancePercent !== undefined ? r.attendancePercent : 
+          (r.status === 'present' ? 100 : r.status === 'absent' ? 0 : 50);
+        if (percent >= 100) { /* 이미 카운트됨 */ }
+        else if (percent > 0) partialCount++;
+      });
+      
+      // 요약 표시 (새로운 상태 체계)
       summaryEl.innerHTML = `
         <div style="padding:12px 16px;background:#064e3b;border-radius:8px;text-align:center;min-width:70px;">
           <div style="font-size:20px;font-weight:bold;color:#6ee7b7;">${present}</div>
-          <div style="font-size:11px;color:#9ca3af;">출석</div>
+          <div style="font-size:11px;color:#9ca3af;">100% 출석</div>
         </div>
-        <div style="padding:12px 16px;background:#78350f;border-radius:8px;text-align:center;min-width:70px;">
-          <div style="font-size:20px;font-weight:bold;color:#fcd34d;">${late}</div>
-          <div style="font-size:11px;color:#9ca3af;">지각</div>
-        </div>
-        <div style="padding:12px 16px;background:#1e3a5f;border-radius:8px;text-align:center;min-width:70px;">
-          <div style="font-size:20px;font-weight:bold;color:#93c5fd;">${earlyLeave}</div>
-          <div style="font-size:11px;color:#9ca3af;">조퇴</div>
+        <div style="padding:12px 16px;background:#581c87;border-radius:8px;text-align:center;min-width:70px;">
+          <div style="font-size:20px;font-weight:bold;color:#c084fc;">${partialCount}</div>
+          <div style="font-size:11px;color:#9ca3af;">부분출석</div>
         </div>
         <div style="padding:12px 16px;background:#7f1d1d;border-radius:8px;text-align:center;min-width:70px;">
           <div style="font-size:20px;font-weight:bold;color:#fca5a5;">${absent}</div>
@@ -3198,37 +3413,68 @@
             <thead>
               <tr style="border-bottom:1px solid #374151;">
                 <th style="padding:10px;text-align:left;color:#9ca3af;">주차</th>
-                <th style="padding:10px;text-align:center;color:#9ca3af;">상태</th>
+                <th style="padding:10px;text-align:center;color:#9ca3af;">출석률</th>
                 <th style="padding:10px;text-align:center;color:#9ca3af;">입장시간</th>
               </tr>
             </thead>
             <tbody>
-              ${weekRecords.map(r => `
+              ${weekRecords.map(r => {
+                const percent = r.attendancePercent !== undefined ? r.attendancePercent : 
+                  (r.status === 'present' ? 100 : r.status === 'absent' ? 0 : 50);
+                const statusClass = getStatusClass(r.status, percent);
+                const statusText = getStatusText(r.status, r.attendancePercent);
+                return `
                 <tr style="border-bottom:1px solid #1f2937;">
                   <td style="padding:10px;">${r.week}</td>
                   <td style="padding:10px;text-align:center;">
-                    <span class="attendance-status ${r.status}">${getStatusText(r.status)}</span>
+                    <span class="attendance-status ${statusClass}">${statusText}</span>
                   </td>
                   <td style="padding:10px;text-align:center;color:#9ca3af;">
                     ${r.joinTime ? new Date(r.joinTime).toLocaleTimeString('ko-KR') : '-'}
                   </td>
                 </tr>
-              `).join('')}
+              `}).join('')}
             </tbody>
           </table>
         `;
       }
     }
     
-    function getStatusText(status) {
+    function getStatusText(status, percent) {
+      if (percent !== undefined && percent > 0) {
+        if (percent >= 100) return '✅ 100% 출석';
+        return `${percent}% 출석`;
+      }
       const statusMap = {
-        'present': '출석',
+        'present': '✅ 100% 출석',
         'late': '지각',
         'early-leave': '조퇴',
         'absent': '결석',
-        'pending': '미정'
+        'pending': '미출결',
+        'not-checked': '미출결',
+        'attending': '🟢 출석중',
+        'partial': '부분출석'
       };
-      return statusMap[status] || status;
+      return statusMap[status] || '미출결';
+    }
+    
+    function getStatusClass(status, percent) {
+      if (percent !== undefined) {
+        if (percent >= 100) return 'attending';
+        if (percent > 0) return 'partial';
+        return 'absent';
+      }
+      const classMap = {
+        'present': 'attending',
+        'late': 'partial',
+        'early-leave': 'partial',
+        'absent': 'absent',
+        'pending': 'not-checked',
+        'not-checked': 'not-checked',
+        'attending': 'attending',
+        'partial': 'partial'
+      };
+      return classMap[status] || 'not-checked';
     }
     
     // 학생 수동 출석하기 버튼
