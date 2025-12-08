@@ -156,6 +156,32 @@
       color: #6b7280;
     }
 
+    .server-select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      background: #0f172a;
+      color: #e5e7eb;
+      font-size: 14px;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 16px;
+    }
+
+    .server-select:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+
+    .server-select option {
+      background: #1f2937;
+      color: #e5e7eb;
+    }
+
     .submit-btn {
       width: 100%;
       padding: 14px;
@@ -962,6 +988,16 @@
           <input type="text" id="inputCourse" placeholder="예: 성경개론" required />
         </div>
 
+        <div class="form-group">
+          <label for="serverSelect">서버 선택</label>
+          <select id="serverSelect" class="server-select">
+            <option value="https://meet.jit.si">Jitsi 기본 (meet.jit.si)</option>
+            <option value="https://meet.ffmuc.net">독일 서버 (meet.ffmuc.net)</option>
+            <option value="https://jitsi.riot.im">Riot 서버 (jitsi.riot.im)</option>
+            <option value="https://meet.scheible.it">Scheible 서버 (meet.scheible.it)</option>
+          </select>
+        </div>
+
         <button type="submit" class="submit-btn" id="submitBtn">
           🚀 강의실 입장
         </button>
@@ -1033,6 +1069,7 @@
           <div class="jitsi-header">
             <div>
               현재 강의명: <span class="room-name-display" id="roomNameDisplay">-</span>
+              <span id="serverStatus" style="margin-left: 12px; font-size: 12px; color: #60a5fa;"></span>
             </div>
             <div class="small-note">
               처음 접속 시 브라우저가 카메라/마이크 권한을 요청하면 <b>허용</b>을 눌러주세요.
@@ -1045,6 +1082,7 @@
             class="jitsi-frame"
             allow="camera; microphone; fullscreen; display-capture"
             src=""
+            onload="onJitsiLoaded()"
           ></iframe>
         </div>
       </section>
@@ -1454,6 +1492,7 @@
         document.querySelector('.jitsi-header').innerHTML = `
           <div>
             현재 강의명: <span class="room-name-display" id="roomNameDisplay">-</span>
+            <span id="serverStatus" style="margin-left: 12px; font-size: 12px; color: #60a5fa;"></span>
           </div>
           <div class="small-note">
             처음 접속 시 브라우저가 카메라/마이크 권한을 요청하면 <b>허용</b>을 눌러주세요.
@@ -1855,26 +1894,110 @@
       link.click();
     }
 
+    // 서버 목록
+    const JITSI_SERVERS = [
+      'https://meet.jit.si',
+      'https://meet.ffmuc.net',
+      'https://jitsi.riot.im',
+      'https://meet.scheible.it'
+    ];
+    
+    let currentServerIndex = 0;
+    let connectionTimeout = null;
+    let currentRoomName = '';
+    let currentDisplayName = '';
+
     // Jitsi URL 생성
-    function buildJitsiUrl(roomName, displayName) {
+    function buildJitsiUrl(serverUrl, roomName, displayName) {
       const cleanRoom = roomName.trim().replace(/\s+/g, '-');
       const encodedRoom = encodeURIComponent(cleanRoom);
       const encodedName = encodeURIComponent(displayName);
+      return `${serverUrl}/${encodedRoom}#userInfo.displayName="${encodedName}"`;
+    }
+
+    // 서버 상태 표시
+    function updateServerStatus(message, isError = false) {
+      const statusEl = document.getElementById('serverStatus');
+      if (statusEl) {
+        statusEl.textContent = message;
+        statusEl.style.color = isError ? '#f87171' : '#60a5fa';
+      }
+    }
+
+    // 다음 서버 시도
+    function tryNextServer() {
+      currentServerIndex++;
       
-      // 광고 없는 무료 Jitsi 서버 사용
-      return `https://meet.jit.si/${encodedRoom}#userInfo.displayName="${encodedName}"`;
+      if (currentServerIndex >= JITSI_SERVERS.length) {
+        // 모든 서버 시도 실패
+        currentServerIndex = 0;
+        updateServerStatus('❌ 모든 서버 접속 실패. 새로고침 후 다시 시도해주세요.', true);
+        return;
+      }
+      
+      const nextServer = JITSI_SERVERS[currentServerIndex];
+      updateServerStatus(`🔄 서버 변경 중... (${currentServerIndex + 1}/${JITSI_SERVERS.length})`);
+      
+      // 서버 선택 드롭다운 업데이트
+      const serverSelect = document.getElementById('serverSelect');
+      if (serverSelect) {
+        serverSelect.value = nextServer;
+      }
+      
+      // 새 서버로 접속 시도
+      setTimeout(() => {
+        loadRoomWithServer(nextServer);
+      }, 1000);
+    }
+
+    // 특정 서버로 강의실 로딩
+    function loadRoomWithServer(serverUrl) {
+      const url = buildJitsiUrl(serverUrl, currentRoomName, currentDisplayName);
+      const iframe = document.getElementById('jitsiFrame');
+      
+      // 기존 타임아웃 취소
+      if (connectionTimeout) {
+        clearTimeout(connectionTimeout);
+      }
+      
+      updateServerStatus(`🔗 ${serverUrl.replace('https://', '')} 접속 중...`);
+      
+      iframe.src = url;
+      
+      // 15초 타임아웃 설정
+      connectionTimeout = setTimeout(() => {
+        updateServerStatus(`⚠️ ${serverUrl.replace('https://', '')} 응답 없음. 다른 서버 시도 중...`, true);
+        tryNextServer();
+      }, 15000);
+    }
+
+    // iframe 로드 완료 감지
+    function onJitsiLoaded() {
+      if (connectionTimeout) {
+        clearTimeout(connectionTimeout);
+        connectionTimeout = null;
+      }
+      const serverUrl = JITSI_SERVERS[currentServerIndex];
+      updateServerStatus(`✅ ${serverUrl.replace('https://', '')} 연결됨`);
     }
 
     // 강의실 로딩
     function loadRoom(roomName) {
       // 교수: [교수] 성명, 학생: [학생] 성명
-      const displayName = currentUser.role === 'professor' 
+      currentDisplayName = currentUser.role === 'professor' 
         ? `[교수] ${currentUser.name}` 
         : `[학생] ${currentUser.name}`;
       
-      const url = buildJitsiUrl(roomName, displayName);
-      document.getElementById('jitsiFrame').src = url;
+      currentRoomName = roomName;
       document.getElementById('roomNameDisplay').textContent = roomName;
+      
+      // 선택된 서버 또는 첫 번째 서버 사용
+      const serverSelect = document.getElementById('serverSelect');
+      const selectedServer = serverSelect ? serverSelect.value : JITSI_SERVERS[0];
+      currentServerIndex = JITSI_SERVERS.indexOf(selectedServer);
+      if (currentServerIndex === -1) currentServerIndex = 0;
+      
+      loadRoomWithServer(JITSI_SERVERS[currentServerIndex]);
     }
 
     // 페이지 로드 시 초기화
