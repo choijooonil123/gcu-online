@@ -807,6 +807,117 @@
       padding: 40px;
       color: #6b7280;
     }
+
+    /* ========== 전체 출석부 ========== */
+    .all-attendance-filters {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .all-attendance-filters select {
+      padding: 8px 12px;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 14px;
+    }
+
+    .course-attendance-section {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .course-attendance-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #374151;
+    }
+
+    .course-attendance-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #f1f5f9;
+    }
+
+    .course-attendance-meta {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .week-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .week-tab {
+      padding: 6px 12px;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      background: transparent;
+      color: #9ca3af;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .week-tab:hover {
+      background: #374151;
+    }
+
+    .week-tab.active {
+      background: #3b82f6;
+      border-color: #3b82f6;
+      color: white;
+    }
+
+    .week-tab.has-data {
+      border-color: #22c55e;
+      color: #4ade80;
+    }
+
+    .week-tab.has-data.active {
+      background: #16a34a;
+      border-color: #16a34a;
+      color: white;
+    }
+
+    .mini-attendance-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .mini-attendance-table th,
+    .mini-attendance-table td {
+      padding: 8px 10px;
+      text-align: left;
+      border-bottom: 1px solid #374151;
+    }
+
+    .mini-attendance-table th {
+      background: #0f172a;
+      color: #9ca3af;
+      font-weight: 600;
+    }
+
+    .mini-attendance-table tr:hover {
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    .export-all-btn {
+      margin-left: auto;
+    }
   </style>
 </head>
 <body>
@@ -1079,6 +1190,51 @@
       <div class="modal-footer">
         <button class="ctrl-btn" onclick="closeEditCourseModal()">취소</button>
         <button class="ctrl-btn primary" onclick="saveCourseEdit()">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 전체 출석부 모달 (운영자용) ========== -->
+  <div class="modal-overlay" id="allAttendanceModal">
+    <div class="modal" style="max-width: 1000px; max-height: 95vh;">
+      <div class="modal-header">
+        <h2>📋 전체 출석부</h2>
+        <button class="modal-close" onclick="closeAllAttendanceModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="all-attendance-filters">
+          <label style="font-size:14px;color:#9ca3af;">강의 선택:</label>
+          <select id="allAttendanceCourseSelect" onchange="renderAllAttendance()">
+            <option value="all">전체 강의</option>
+          </select>
+          <label style="font-size:14px;color:#9ca3af;margin-left:12px;">주차:</label>
+          <select id="allAttendanceWeekSelect" onchange="renderAllAttendance()">
+            <option value="all">전체 주차</option>
+            <option value="1">1주차</option>
+            <option value="2">2주차</option>
+            <option value="3">3주차</option>
+            <option value="4">4주차</option>
+            <option value="5">5주차</option>
+            <option value="6">6주차</option>
+            <option value="7">7주차</option>
+            <option value="8">8주차</option>
+            <option value="9">9주차</option>
+            <option value="10">10주차</option>
+            <option value="11">11주차</option>
+            <option value="12">12주차</option>
+            <option value="13">13주차</option>
+            <option value="14">14주차</option>
+            <option value="15">15주차</option>
+            <option value="16">16주차</option>
+          </select>
+          <button class="ctrl-btn export-all-btn" onclick="exportAllAttendance()">📥 전체 내보내기</button>
+        </div>
+        <div id="allAttendanceContent">
+          <!-- 동적으로 생성됨 -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="ctrl-btn" onclick="closeAllAttendanceModal()">닫기</button>
       </div>
     </div>
   </div>
@@ -1477,7 +1633,226 @@
     }
 
     function openAllAttendanceModal() {
-      alert('전체 출석부 기능은 준비 중입니다.');
+      document.getElementById('allAttendanceModal').classList.add('show');
+      
+      // 강의 선택 옵션 업데이트
+      const courseSelect = document.getElementById('allAttendanceCourseSelect');
+      courseSelect.innerHTML = '<option value="all">전체 강의</option>';
+      courseData.forEach(course => {
+        courseSelect.innerHTML += `<option value="${course.name}">${course.name}</option>`;
+      });
+      
+      renderAllAttendance();
+    }
+
+    function closeAllAttendanceModal() {
+      document.getElementById('allAttendanceModal').classList.remove('show');
+    }
+
+    function renderAllAttendance() {
+      const selectedCourse = document.getElementById('allAttendanceCourseSelect').value;
+      const selectedWeek = document.getElementById('allAttendanceWeekSelect').value;
+      const container = document.getElementById('allAttendanceContent');
+
+      if (courseData.length === 0) {
+        container.innerHTML = '<div class="no-courses">등록된 강의가 없습니다.</div>';
+        return;
+      }
+
+      const coursesToShow = selectedCourse === 'all' 
+        ? courseData 
+        : courseData.filter(c => c.name === selectedCourse);
+
+      let html = '';
+
+      coursesToShow.forEach(course => {
+        const attendanceKey = `attendance_${course.name}`;
+        const savedData = localStorage.getItem(attendanceKey);
+        const attendanceInfo = savedData ? JSON.parse(savedData) : null;
+
+        html += `<div class="course-attendance-section">`;
+        html += `<div class="course-attendance-header">`;
+        html += `<div>
+          <div class="course-attendance-title">📖 ${course.name}</div>
+          <div class="course-attendance-meta">담당교수: ${course.professor} | 수강생: ${course.students.length}명</div>
+        </div>`;
+        html += `</div>`;
+
+        // 주차 탭 생성
+        if (selectedWeek === 'all') {
+          html += `<div class="week-tabs" id="weekTabs_${course.name.replace(/\s/g, '_')}">`;
+          for (let w = 1; w <= 16; w++) {
+            const hasData = attendanceInfo && attendanceInfo.records && attendanceInfo.records[w];
+            const dataClass = hasData ? 'has-data' : '';
+            html += `<button class="week-tab ${dataClass} ${w === 1 ? 'active' : ''}" 
+                      onclick="showWeekAttendance('${course.name}', ${w}, this)">${w}주</button>`;
+          }
+          html += `</div>`;
+        }
+
+        // 출석 테이블
+        const weekToShow = selectedWeek === 'all' ? 1 : parseInt(selectedWeek);
+        html += renderCourseWeekAttendance(course, attendanceInfo, weekToShow);
+
+        html += `</div>`;
+      });
+
+      container.innerHTML = html || '<div class="no-courses">표시할 출석 데이터가 없습니다.</div>';
+    }
+
+    function renderCourseWeekAttendance(course, attendanceInfo, week) {
+      const records = attendanceInfo && attendanceInfo.records ? attendanceInfo.records[week] : null;
+      
+      let html = `<div class="attendance-table-wrapper" id="attendanceTable_${course.name.replace(/\s/g, '_')}">`;
+      html += `<table class="mini-attendance-table">`;
+      html += `<thead><tr>
+        <th style="width:50px;">번호</th>
+        <th>이름</th>
+        <th style="width:100px;">입장시간</th>
+        <th style="width:100px;">퇴장시간</th>
+        <th style="width:80px;">상태</th>
+      </tr></thead>`;
+      html += `<tbody>`;
+
+      if (course.students.length === 0) {
+        html += `<tr><td colspan="5" style="text-align:center;color:#6b7280;padding:20px;">등록된 수강생이 없습니다.</td></tr>`;
+      } else {
+        let presentCount = 0, lateCount = 0, earlyLeaveCount = 0, absentCount = 0;
+
+        course.students.forEach((name, index) => {
+          const record = records ? records[name] : null;
+          const status = record ? record.status : 'pending';
+
+          if (status === 'present') presentCount++;
+          else if (status === 'late') lateCount++;
+          else if (status === 'early-leave') earlyLeaveCount++;
+          else if (status === 'absent') absentCount++;
+
+          const statusLabel = {
+            'present': '출석',
+            'late': '지각',
+            'early-leave': '조퇴',
+            'absent': '결석',
+            'pending': '미정'
+          };
+
+          const joinTime = record && record.joinTime ? formatTimeFromString(record.joinTime) : '-';
+          const leaveTime = record && record.leaveTime ? formatTimeFromString(record.leaveTime) : '-';
+
+          html += `<tr>
+            <td>${index + 1}</td>
+            <td>${name}</td>
+            <td style="font-size:11px;color:#6b7280;">${joinTime}</td>
+            <td style="font-size:11px;color:#6b7280;">${leaveTime}</td>
+            <td><span class="attendance-status ${status}">${statusLabel[status]}</span></td>
+          </tr>`;
+        });
+
+        // 요약 행
+        html += `<tr style="background:#0f172a;">
+          <td colspan="5" style="padding:10px;">
+            <span class="attendance-status present">출석 ${presentCount}</span>
+            <span class="attendance-status late" style="margin-left:8px;">지각 ${lateCount}</span>
+            <span class="attendance-status early-leave" style="margin-left:8px;">조퇴 ${earlyLeaveCount}</span>
+            <span class="attendance-status absent" style="margin-left:8px;">결석 ${absentCount}</span>
+          </td>
+        </tr>`;
+      }
+
+      html += `</tbody></table></div>`;
+      return html;
+    }
+
+    function showWeekAttendance(courseName, week, btn) {
+      // 탭 활성화
+      const tabContainer = btn.parentElement;
+      tabContainer.querySelectorAll('.week-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+
+      // 테이블 업데이트
+      const course = courseData.find(c => c.name === courseName);
+      if (!course) return;
+
+      const attendanceKey = `attendance_${courseName}`;
+      const savedData = localStorage.getItem(attendanceKey);
+      const attendanceInfo = savedData ? JSON.parse(savedData) : null;
+
+      const tableContainer = document.getElementById(`attendanceTable_${courseName.replace(/\s/g, '_')}`);
+      if (tableContainer) {
+        tableContainer.outerHTML = renderCourseWeekAttendance(course, attendanceInfo, week);
+      }
+    }
+
+    function formatTimeFromString(timeStr) {
+      if (!timeStr) return '-';
+      const date = new Date(timeStr);
+      return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    function exportAllAttendance() {
+      const selectedCourse = document.getElementById('allAttendanceCourseSelect').value;
+      const selectedWeek = document.getElementById('allAttendanceWeekSelect').value;
+
+      const coursesToExport = selectedCourse === 'all' 
+        ? courseData 
+        : courseData.filter(c => c.name === selectedCourse);
+
+      if (coursesToExport.length === 0) {
+        alert('내보낼 데이터가 없습니다.');
+        return;
+      }
+
+      let csv = '';
+      const statusLabel = {
+        'present': '출석',
+        'late': '지각',
+        'early-leave': '조퇴',
+        'absent': '결석',
+        'pending': '미정'
+      };
+
+      coursesToExport.forEach(course => {
+        const attendanceKey = `attendance_${course.name}`;
+        const savedData = localStorage.getItem(attendanceKey);
+        const attendanceInfo = savedData ? JSON.parse(savedData) : null;
+
+        const weeksToExport = selectedWeek === 'all' 
+          ? Array.from({length: 16}, (_, i) => i + 1)
+          : [parseInt(selectedWeek)];
+
+        weeksToExport.forEach(week => {
+          const records = attendanceInfo && attendanceInfo.records ? attendanceInfo.records[week] : null;
+          
+          // 데이터가 있는 주차만 내보내기
+          if (!records && selectedWeek === 'all') return;
+
+          csv += `\n[${course.name}] ${week}주차 - 담당교수: ${course.professor}\n`;
+          csv += `번호,이름,입장시간,퇴장시간,출석상태\n`;
+
+          course.students.forEach((name, index) => {
+            const record = records ? records[name] : null;
+            const status = record ? record.status : 'pending';
+            const joinTime = record && record.joinTime ? formatTimeFromString(record.joinTime) : '-';
+            const leaveTime = record && record.leaveTime ? formatTimeFromString(record.leaveTime) : '-';
+
+            csv += `${index + 1},${name},${joinTime},${leaveTime},${statusLabel[status]}\n`;
+          });
+        });
+      });
+
+      if (!csv.trim()) {
+        alert('내보낼 출석 데이터가 없습니다.');
+        return;
+      }
+
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const filename = selectedCourse === 'all' 
+        ? `전체출석부_${selectedWeek === 'all' ? '전체주차' : selectedWeek + '주차'}.csv`
+        : `출석부_${selectedCourse}_${selectedWeek === 'all' ? '전체주차' : selectedWeek + '주차'}.csv`;
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
     }
 
     // Jitsi URL 생성
@@ -1487,7 +1862,7 @@
       const encodedName = encodeURIComponent(displayName);
       
       // 광고 없는 무료 Jitsi 서버 사용
-      return `https://meet.ffmuc.net/${encodedRoom}#userInfo.displayName="${encodedName}"`;
+      return `https://meet.jit.si/${encodedRoom}#userInfo.displayName="${encodedName}"`;
     }
 
     // 강의실 로딩
