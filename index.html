@@ -13,6 +13,10 @@
   <meta name="apple-mobile-web-app-title" content="GCU 강의실" />
   <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
   <link rel="apple-touch-icon" href="icons/icon.svg" />
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
   <style>
     * { box-sizing: border-box; }
@@ -212,6 +216,28 @@
       color: #6b7280;
     }
 
+    .school-name {
+      font-size: 15px;
+      font-weight: 600;
+      background: linear-gradient(90deg, #60a5fa, #a78bfa, #f472b6, #60a5fa);
+      background-size: 300% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: sparkle 3s ease-in-out infinite;
+    }
+
+    @keyframes sparkle {
+      0%, 100% {
+        background-position: 0% 50%;
+        filter: brightness(1);
+      }
+      50% {
+        background-position: 100% 50%;
+        filter: brightness(1.2);
+      }
+    }
+
     /* ========== 메인 레이아웃 ========== */
     .main-app {
       display: none;
@@ -313,6 +339,7 @@
       display: flex;
       flex-direction: column;
       min-height: 0;
+      position: relative;
     }
 
     .jitsi-header {
@@ -407,6 +434,97 @@
 
     .professor-controls.show {
       display: flex;
+    }
+
+    /* ========== 헤더 버튼 (교수/학생) ========== */
+    .professor-header-btns,
+    .student-header-btns {
+      display: none;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .professor-header-btns.show,
+    .student-header-btns.show {
+      display: flex;
+    }
+
+    .header-btn {
+      padding: 6px 10px;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      background: #1f2937;
+      color: #e5e7eb;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .header-btn:hover {
+      background: #374151;
+    }
+
+    .header-btn.primary {
+      background: #2563eb;
+      border-color: #2563eb;
+      color: white;
+    }
+
+    .header-btn.primary:hover {
+      background: #1d4ed8;
+    }
+
+    .header-btn.primary:disabled {
+      background: #374151;
+      border-color: #374151;
+      color: #6b7280;
+      cursor: not-allowed;
+    }
+
+    .header-btn.danger {
+      background: #dc2626;
+      border-color: #dc2626;
+      color: white;
+    }
+
+    .header-btn.danger:hover {
+      background: #b91c1c;
+    }
+
+    .header-btn.danger:disabled {
+      background: #374151;
+      border-color: #374151;
+      color: #6b7280;
+      cursor: not-allowed;
+    }
+
+    .header-btn.success {
+      background: #16a34a;
+      border-color: #16a34a;
+      color: white;
+    }
+
+    .header-btn.success:hover {
+      background: #15803d;
+    }
+
+    .header-btn.success:disabled {
+      background: #374151;
+      border-color: #374151;
+      color: #6b7280;
+      cursor: not-allowed;
+    }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: rgba(15, 23, 42, 0.8);
+      border-radius: 6px;
+      font-size: 12px;
+      color: #9ca3af;
     }
 
     .ctrl-btn {
@@ -952,8 +1070,8 @@
   <div class="login-overlay" id="loginOverlay">
     <div class="login-container">
       <div class="login-header">
-        <h1>🎓 온라인 강의실</h1>
-      </div>
+        <h1>🎓 온라인 강의실 🎓</h1>
+    </div>
 
       <!-- 역할 선택 -->
       <div class="role-selector">
@@ -961,11 +1079,11 @@
           <span class="role-icon">⚙️</span>
           <span class="role-label">운영</span>
         </button>
-        <button type="button" class="role-btn active" id="btnProfessor" onclick="selectRole('professor')">
+        <button type="button" class="role-btn" id="btnProfessor" onclick="selectRole('professor')">
           <span class="role-icon">👨‍🏫</span>
           <span class="role-label">교수</span>
         </button>
-        <button type="button" class="role-btn" id="btnStudent" onclick="selectRole('student')">
+        <button type="button" class="role-btn active" id="btnStudent" onclick="selectRole('student')">
           <span class="role-icon">👨‍🎓</span>
           <span class="role-label">학생</span>
         </button>
@@ -991,8 +1109,8 @@
         <div class="form-group">
           <label for="serverSelect">서버 선택</label>
           <select id="serverSelect" class="server-select">
-            <option value="https://meet.jit.si">Jitsi 기본 (meet.jit.si)</option>
             <option value="https://meet.ffmuc.net">독일 서버 (meet.ffmuc.net)</option>
+            <option value="https://meet.jit.si">Jitsi 기본 (meet.jit.si)</option>
             <option value="https://jitsi.riot.im">Riot 서버 (jitsi.riot.im)</option>
             <option value="https://meet.scheible.it">Scheible 서버 (meet.scheible.it)</option>
           </select>
@@ -1001,7 +1119,7 @@
         <button type="submit" class="submit-btn" id="submitBtn">
           🚀 강의실 입장
         </button>
-      </form>
+    </form>
 
       <!-- PWA 설치 버튼 -->
       <button type="button" class="install-btn" id="installBtn" onclick="installApp()">
@@ -1014,19 +1132,35 @@
       </div>
 
       <div class="login-footer">
-        김천대학교 상담심리학과
+        <span class="school-name">김천대학교 상담심리학과</span>
+        <div id="firebaseStatus" style="margin-top: 8px; font-size: 11px;"></div>
       </div>
     </div>
-  </div>
+      </div>
 
   <!-- ========== 메인 앱 ========== -->
   <div class="main-app" id="mainApp">
     <header>
       <div class="header-left">
-        <div class="title">김천대학교 상담심리학과 강의실</div>
+        <div class="title"><span class="school-name">김천대학교 상담심리학과</span> 강의실</div>
       </div>
 
       <div class="user-info">
+        <!-- 교수 전용 버튼 (배지 왼쪽) -->
+        <div class="professor-header-btns" id="professorHeaderBtns">
+          <button class="header-btn primary" id="btnStartClass" onclick="startClass()">▶️ 수업시작</button>
+          <button class="header-btn danger" id="btnEndClass" onclick="endClass()" disabled>⏹️ 수업종료</button>
+          <button class="header-btn" onclick="openAttendanceModal()">📋 출석부</button>
+          <span class="header-status" id="headerClassStatus">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="classStatusText">수업 대기중</span>
+          </span>
+      </div>
+        <!-- 학생 전용 버튼 (배지 왼쪽) -->
+        <div class="student-header-btns" id="studentHeaderBtns">
+          <button class="header-btn" onclick="openMyAttendanceModal()">📋 내 출석현황</button>
+          <button class="header-btn success" id="btnCheckIn" onclick="studentCheckIn()">✋ 출석하기</button>
+        </div>
         <div class="user-badge" id="userBadge">
           <span class="badge-icon" id="badgeIcon">👨‍🏫</span>
           <span id="badgeText">CHOI JUNIL 교수</span>
@@ -1043,50 +1177,44 @@
       <button class="ctrl-btn" onclick="openAllAttendanceModal()">
         📋 전체 출석부
       </button>
-    </div>
-
-    <!-- 교수 전용 컨트롤 바 -->
-    <div class="professor-controls" id="professorControls">
-      <button class="ctrl-btn primary" id="btnStartClass" onclick="startClass()">
-        ▶️ 수업시작
+      <button class="ctrl-btn" onclick="checkFirebaseStatus()" style="margin-left:auto;">
+        🔍 Firebase 진단
       </button>
-      <button class="ctrl-btn danger" id="btnEndClass" onclick="endClass()" disabled>
-        ⏹️ 수업종료
-      </button>
-      <button class="ctrl-btn" onclick="openAttendanceModal()">
-        📋 출석부
-      </button>
-      <div class="class-status">
-        <span class="status-dot" id="statusDot"></span>
-        <span id="classStatusText">수업 대기중</span>
-      </div>
     </div>
 
     <main>
       <!-- Jitsi 영상영역 -->
-      <section>
-        <div class="jitsi-wrapper">
-          <div class="jitsi-header">
-            <div>
+    <section>
+      <div class="jitsi-wrapper">
+        <div class="jitsi-header">
+          <div>
               현재 강의명: <span class="room-name-display" id="roomNameDisplay">-</span>
               <span id="serverStatus" style="margin-left: 12px; font-size: 12px; color: #60a5fa;"></span>
-            </div>
-            <div class="small-note">
-              처음 접속 시 브라우저가 카메라/마이크 권한을 요청하면 <b>허용</b>을 눌러주세요.
-            </div>
           </div>
-
-          <!-- Jitsi IFrame -->
-          <iframe
-            id="jitsiFrame"
-            class="jitsi-frame"
-            allow="camera; microphone; fullscreen; display-capture"
-            src=""
-            onload="onJitsiLoaded()"
-          ></iframe>
+          <div class="small-note">
+            처음 접속 시 브라우저가 카메라/마이크 권한을 요청하면 <b>허용</b>을 눌러주세요.
+          </div>
         </div>
-      </section>
-    </main>
+
+        <!-- 로딩/디버그 표시 -->
+        <div id="jitsiLoading" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; color:#9ca3af; z-index:10;">
+          <div style="width:50px; height:50px; border:4px solid #374151; border-top:4px solid #60a5fa; border-radius:50%; margin:0 auto 20px; animation:spin 1s linear infinite;"></div>
+          <p>강의실에 접속 중입니다...</p>
+          <p id="debugInfo" style="font-size:11px; margin-top:10px; color:#6b7280;"></p>
+        </div>
+        <style>@keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }</style>
+
+        <!-- Jitsi IFrame -->
+        <iframe
+          id="jitsiFrame"
+          class="jitsi-frame"
+          allow="camera; microphone; fullscreen; display-capture"
+          src=""
+          onload="onJitsiLoaded()"
+        ></iframe>
+      </div>
+    </section>
+  </main>
   </div>
 
   <!-- ========== 수강생 관리 모달 ========== -->
@@ -1277,22 +1405,141 @@
     </div>
   </div>
 
+  <!-- ========== 내 출석현황 모달 (학생용) ========== -->
+  <div class="modal-overlay" id="myAttendanceModal">
+    <div class="modal" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2>📋 내 출석현황</h2>
+        <button class="modal-close" onclick="closeMyAttendanceModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="myAttendanceInfo" style="margin-bottom: 16px;">
+          <div style="font-size: 14px; color: #9ca3af;">강의명</div>
+          <div style="font-size: 18px; font-weight: 600; color: #60a5fa;" id="myCourseName">-</div>
+        </div>
+        <div id="myAttendanceSummary" style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+          <!-- 동적 생성 -->
+        </div>
+        <div id="myAttendanceList">
+          <!-- 동적 생성 -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="ctrl-btn" onclick="closeMyAttendanceModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ========== 운영자 인증 정보 ==========
-    const ADMIN_CREDENTIALS = {
-      name: '최준일',
-      employeeId: '19930007'
-    };
+    const ADMIN_CREDENTIALS = [
+      { name: '최준일', employeeId: '19930007' },
+      { name: '박성주', employeeId: '01056568082' },
+      { name: '김향지', employeeId: '01022363841' },
+      { name: '추교현', employeeId: '01076796634' }
+    ];
 
     // 현재 사용자 정보
     let currentUser = {
-      role: 'professor',  // 'admin', 'professor', 'student'
+      role: 'student',  // 'admin', 'professor', 'student' - 기본값 학생
       name: '',
       course: ''
     };
 
     // 강의 데이터 (운영자가 관리)
     let courseData = [];  // { id, name, professor, students: [] }
+    let courseDataLoaded = false;  // 데이터 로드 완료 여부
+
+    // ========== Firebase 설정 ==========
+    const firebaseConfig = {
+      apiKey: "AIzaSyBBDEBlBzo2VWDNIJP4-wn5crBkXlum5zM",
+      authDomain: "online-fcfe9.firebaseapp.com",
+      databaseURL: "https://online-fcfe9-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "online-fcfe9",
+      storageBucket: "online-fcfe9.firebasestorage.app",
+      messagingSenderId: "484288182734",
+      appId: "1:484288182734:web:c26552da2c688cc327d39f",
+      measurementId: "G-0D3SF4FMH7"
+    };
+
+    // Firebase 초기화
+    let db = null;
+    let firebaseEnabled = false;
+
+    // Firebase 연결 상태 저장
+    let lastFirebaseStatus = { connected: false, message: '확인 중...' };
+    
+    function updateFirebaseStatus(connected, message) {
+      lastFirebaseStatus = { connected, message };
+      applyFirebaseStatus();
+    }
+    
+    function applyFirebaseStatus() {
+      const statusEl = document.getElementById('firebaseStatus');
+      if (statusEl) {
+        if (lastFirebaseStatus.connected) {
+          statusEl.innerHTML = `<span style="color: #10b981;">🟢 클라우드 연결됨</span>`;
+        } else {
+          statusEl.innerHTML = `<span style="color: #f59e0b;">🟡 ${lastFirebaseStatus.message || '로컬 모드'}</span>`;
+        }
+      } else {
+        // 요소가 아직 없으면 나중에 다시 시도
+        setTimeout(applyFirebaseStatus, 500);
+      }
+    }
+
+    try {
+      if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.database();
+        firebaseEnabled = true;  // 일단 활성화
+        
+        // Firebase에서 강의 데이터 실시간 수신 시작
+        db.ref('courses').on('value', (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            courseData = Object.values(data);
+          } else {
+            courseData = [];
+          }
+          courseDataLoaded = true;
+          console.log('📥 Firebase에서 강의 데이터 로드:', courseData.length, '개');
+          if (courseData.length > 0) {
+            console.log('📋 등록된 강의:', courseData.map(c => `${c.name}(${c.professor})`).join(', '));
+          }
+          
+          // UI 업데이트
+          if (document.getElementById('courseModal')?.classList.contains('show')) {
+            renderCourseList();
+          }
+          updateCourseDropdowns();
+          updateLoadingStatus();
+        });
+        
+        // 연결 상태 확인
+        db.ref('.info/connected').on('value', (snapshot) => {
+          if (snapshot.val() === true) {
+            updateFirebaseStatus(true);
+            console.log('✅ Firebase 연결 성공');
+          } else {
+            updateFirebaseStatus(false, '연결 끊김');
+            console.log('⚠️ Firebase 연결 끊김');
+          }
+        });
+      } else {
+        throw new Error('Firebase 설정이 필요합니다');
+      }
+    } catch (error) {
+      console.warn('⚠️ Firebase 미설정, 로컬 저장소 사용:', error.message);
+      firebaseEnabled = false;
+      setTimeout(() => updateFirebaseStatus(false, 'Firebase 설정 필요'), 100);
+      // 로컬 저장소에서 로드
+      const saved = localStorage.getItem('gcu_courses');
+      if (saved) {
+        courseData = JSON.parse(saved);
+      }
+      courseDataLoaded = true;
+    }
 
     // DOM 요소
     const loginOverlay = document.getElementById('loginOverlay');
@@ -1301,21 +1548,90 @@
     const btnProfessor = document.getElementById('btnProfessor');
     const btnStudent = document.getElementById('btnStudent');
 
-    // 강의 데이터 로드
-    function loadCourseData() {
-      const saved = localStorage.getItem('gcu_courses');
-      if (saved) {
-        courseData = JSON.parse(saved);
+    // 로딩 상태 업데이트
+    function updateLoadingStatus() {
+      const submitBtn = document.getElementById('submitBtn');
+      if (submitBtn && courseDataLoaded) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '🚀 강의실 입장';
+      }
+    }
+    
+    // 강의 데이터 수동 새로고침
+    function refreshCourseData() {
+      if (firebaseEnabled && db) {
+        db.ref('courses').once('value').then((snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            courseData = Object.values(data);
+          } else {
+            courseData = [];
+          }
+          courseDataLoaded = true;
+          console.log('🔄 강의 데이터 새로고침:', courseData.length, '개');
+        });
       }
     }
 
-    // 강의 데이터 저장
+    // 강의 데이터 저장 (Firebase 또는 localStorage)
     function saveCourseData() {
-      localStorage.setItem('gcu_courses', JSON.stringify(courseData));
+      if (firebaseEnabled && db) {
+        // Firebase에 저장 (배열을 객체로 변환)
+        const coursesObj = {};
+        courseData.forEach(course => {
+          coursesObj[course.id] = course;
+        });
+        db.ref('courses').set(coursesObj)
+          .then(() => console.log('📤 Firebase에 강의 데이터 저장 완료'))
+          .catch(err => console.error('Firebase 저장 오류:', err));
+      } else {
+        // 로컬 저장소에 저장
+        localStorage.setItem('gcu_courses', JSON.stringify(courseData));
+      }
     }
 
-    // 초기화 시 데이터 로드
-    loadCourseData();
+    // 강의 선택 드롭다운 업데이트
+    function updateCourseDropdowns() {
+      // 출석부 강의 선택 드롭다운
+      const attendanceCourseSelect = document.getElementById('attendanceCourseSelect');
+      if (attendanceCourseSelect) {
+        const currentValue = attendanceCourseSelect.value;
+        attendanceCourseSelect.innerHTML = '<option value="all">전체 강의</option>' +
+          courseData.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+        if (currentValue && courseData.find(c => c.name === currentValue)) {
+          attendanceCourseSelect.value = currentValue;
+        }
+      }
+    }
+
+    // 출석 데이터 로드 (Firebase 또는 localStorage)
+    function loadAttendanceData(courseName) {
+      return new Promise((resolve) => {
+        const key = `attendance_${courseName}`;
+        if (firebaseEnabled && db) {
+          db.ref(`attendance/${courseName.replace(/[.#$\/\[\]]/g, '_')}`).once('value')
+            .then(snapshot => {
+              resolve(snapshot.val() || { weeks: {} });
+            })
+            .catch(() => resolve({ weeks: {} }));
+        } else {
+          const saved = localStorage.getItem(key);
+          resolve(saved ? JSON.parse(saved) : { weeks: {} });
+        }
+      });
+    }
+
+    // 출석 데이터 저장 (Firebase 또는 localStorage)
+    function saveAttendanceData(courseName, data) {
+      const key = `attendance_${courseName}`;
+      if (firebaseEnabled && db) {
+        db.ref(`attendance/${courseName.replace(/[.#$\/\[\]]/g, '_')}`).set(data)
+          .then(() => console.log('📤 출석 데이터 저장 완료'))
+          .catch(err => console.error('출석 저장 오류:', err));
+      } else {
+        localStorage.setItem(key, JSON.stringify(data));
+      }
+    }
 
     // 역할 선택
     function selectRole(role) {
@@ -1349,14 +1665,14 @@
         groupCourse.classList.remove('hidden');
         inputEmployeeId.required = false;
         inputCourse.required = true;
-        submitBtn.textContent = '🚀 강의실 입장';
+        submitBtn.textContent = '👨‍🏫 교수로 입장';
       } else {
         btnStudent.classList.add('active');
         groupEmployeeId.classList.add('hidden');
         groupCourse.classList.remove('hidden');
         inputEmployeeId.required = false;
         inputCourse.required = true;
-        submitBtn.textContent = '🚀 강의실 입장';
+        submitBtn.textContent = '👨‍🎓 학생으로 입장';
       }
     }
 
@@ -1370,8 +1686,9 @@
 
       // 운영자 로그인
       if (currentUser.role === 'admin') {
-        if (name !== ADMIN_CREDENTIALS.name || employeeId !== ADMIN_CREDENTIALS.employeeId) {
-          alert('운영자 인증에 실패했습니다.\n이름과 사번을 확인해주세요.');
+        const validAdmin = ADMIN_CREDENTIALS.find(admin => admin.name === name && admin.employeeId === employeeId);
+        if (!validAdmin) {
+          alert('운영자 인증에 실패했습니다.\n이름과 사번/전화번호를 확인해주세요.');
           return;
         }
         currentUser.name = name;
@@ -1389,28 +1706,47 @@
         return;
       }
 
+      // 데이터 로드 확인
+      if (!courseDataLoaded) {
+        alert('강의 데이터를 불러오는 중입니다.\n잠시 후 다시 시도해주세요.');
+        return;
+      }
+
+      // 디버그: 현재 등록된 강의 출력
+      console.log('🔍 로그인 시도:', { name, course, role: currentUser.role });
+      console.log('📋 등록된 강의 목록:', courseData);
+      
+      // 디버그: 역할 확인 (화면에 잠시 표시)
+      console.log(`👤 선택된 역할: ${currentUser.role === 'professor' ? '교수' : currentUser.role === 'student' ? '학생' : '운영자'}`);
+
       // 강의 존재 확인
       const courseInfo = courseData.find(c => c.name === course);
       if (!courseInfo) {
-        alert(`"${course}" 강의가 등록되어 있지 않습니다.\n운영자에게 문의해주세요.`);
+        const availableCourses = courseData.map(c => c.name).join(', ') || '없음';
+        alert(`"${course}" 강의가 등록되어 있지 않습니다.\n\n등록된 강의: ${availableCourses}\n\n운영자에게 문의해주세요.`);
         return;
       }
 
       // 교수 검증
       if (currentUser.role === 'professor') {
+        console.log('🔍 교수 검증:', { 입력이름: name, 등록교수: courseInfo.professor });
         if (courseInfo.professor !== name) {
-          alert(`"${course}" 강의의 담당교수가 아닙니다.\n등록된 담당교수: ${courseInfo.professor}`);
+          alert(`"${course}" 강의의 담당교수가 아닙니다.\n\n입력한 이름: ${name}\n등록된 담당교수: ${courseInfo.professor}`);
           return;
         }
       }
 
       // 학생 검증
       if (currentUser.role === 'student') {
-        if (!courseInfo.students.includes(name)) {
-          alert(`"${course}" 강의의 수강생 명단에 "${name}"이(가) 없습니다.\n운영자에게 문의해주세요.`);
+        console.log('🔍 학생 검증:', { 입력이름: name, 수강생목록: courseInfo.students });
+        if (!courseInfo.students || !courseInfo.students.includes(name)) {
+          const studentList = courseInfo.students?.join(', ') || '없음';
+          alert(`"${course}" 강의의 수강생 명단에 "${name}"이(가) 없습니다.\n\n등록된 수강생: ${studentList}\n\n운영자에게 문의해주세요.`);
           return;
         }
       }
+
+      console.log('✅ 로그인 성공:', { name, course, role: currentUser.role });
 
       currentUser.name = name;
       currentUser.course = course;
@@ -1424,6 +1760,11 @@
 
       // Jitsi 강의실 로드 (운영자가 아닌 경우)
       if (currentUser.role !== 'admin') {
+        console.log('🚀 Jitsi 로딩 시작, course:', course);
+        if (!course || course.trim() === '') {
+          alert('오류: 강의명이 비어있습니다!\n입력된 course: "' + course + '"');
+          return;
+        }
         loadRoom(course);
       }
     }
@@ -1434,11 +1775,13 @@
       const badgeIcon = document.getElementById('badgeIcon');
       const badgeText = document.getElementById('badgeText');
       const adminControls = document.getElementById('adminControls');
-      const professorControls = document.getElementById('professorControls');
+      const professorHeaderBtns = document.getElementById('professorHeaderBtns');
+      const studentHeaderBtns = document.getElementById('studentHeaderBtns');
 
       // 모든 컨트롤 숨기기
       adminControls.classList.remove('show');
-      professorControls.classList.remove('show');
+      professorHeaderBtns.classList.remove('show');
+      studentHeaderBtns.classList.remove('show');
 
       if (currentUser.role === 'admin') {
         userBadge.className = 'user-badge admin';
@@ -1452,14 +1795,15 @@
         userBadge.className = 'user-badge professor';
         badgeIcon.textContent = '👨‍🏫';
         badgeText.textContent = `${currentUser.name} 교수`;
-        professorControls.classList.add('show');
+        professorHeaderBtns.classList.add('show');
         document.getElementById('jitsiFrame').style.display = '';
-        loadAttendanceData();
+        loadAttendanceDataLocal();
         updateClassUI();
       } else {
         userBadge.className = 'user-badge student';
         badgeIcon.textContent = '👨‍🎓';
         badgeText.textContent = `${currentUser.name} 학생`;
+        studentHeaderBtns.classList.add('show');
         document.getElementById('jitsiFrame').style.display = '';
         checkStudentAttendance();
       }
@@ -1475,7 +1819,7 @@
 
         // 폼 초기화
         document.getElementById('loginForm').reset();
-        selectRole('professor');
+        selectRole('student');
 
         // 화면 전환
         mainApp.classList.remove('show');
@@ -1896,8 +2240,8 @@
 
     // 서버 목록
     const JITSI_SERVERS = [
-      'https://meet.jit.si',
       'https://meet.ffmuc.net',
+      'https://meet.jit.si',
       'https://jitsi.riot.im',
       'https://meet.scheible.it'
     ];
@@ -1952,16 +2296,36 @@
 
     // 특정 서버로 강의실 로딩
     function loadRoomWithServer(serverUrl) {
+      if (!currentRoomName || currentRoomName.trim() === '') {
+        console.error('❌ 강의명이 비어있습니다');
+        updateServerStatus('❌ 강의명이 설정되지 않았습니다', true);
+        alert('오류: 강의명이 설정되지 않았습니다.\ncurrentRoomName: ' + currentRoomName);
+        return;
+      }
+      
       const url = buildJitsiUrl(serverUrl, currentRoomName, currentDisplayName);
       const iframe = document.getElementById('jitsiFrame');
+      const loadingEl = document.getElementById('jitsiLoading');
+      const debugInfo = document.getElementById('debugInfo');
+      
+      console.log('🔗 Jitsi 접속 시도');
+      console.log('  - URL:', url);
+      console.log('  - 강의명:', currentRoomName);
+      console.log('  - 표시이름:', currentDisplayName);
       
       // 기존 타임아웃 취소
       if (connectionTimeout) {
         clearTimeout(connectionTimeout);
       }
       
+      // 로딩 표시
+      if (loadingEl) loadingEl.style.display = 'block';
+      if (debugInfo) debugInfo.textContent = `URL: ${url.substring(0, 50)}...`;
+      
       updateServerStatus(`🔗 ${serverUrl.replace('https://', '')} 접속 중...`);
       
+      // iframe 로드
+      console.log('📺 iframe.src 설정:', url);
       iframe.src = url;
       
       // 15초 타임아웃 설정
@@ -1973,6 +2337,20 @@
 
     // iframe 로드 완료 감지
     function onJitsiLoaded() {
+      const iframe = document.getElementById('jitsiFrame');
+      const loadingEl = document.getElementById('jitsiLoading');
+      
+      // 빈 src이면 무시
+      if (!iframe.src || iframe.src === '' || iframe.src === 'about:blank' || iframe.src === window.location.href) {
+        console.log('⏭️ 빈 iframe 로드 무시');
+        return;
+      }
+      
+      console.log('✅ iframe 로드 완료:', iframe.src);
+      
+      // 로딩 숨기기
+      if (loadingEl) loadingEl.style.display = 'none';
+      
       if (connectionTimeout) {
         clearTimeout(connectionTimeout);
         connectionTimeout = null;
@@ -1981,8 +2359,51 @@
       updateServerStatus(`✅ ${serverUrl.replace('https://', '')} 연결됨`);
     }
 
+    // 강의실 서버 정보 저장 (Firebase)
+    function saveRoomServer(roomName, serverUrl) {
+      if (firebaseEnabled && db) {
+        const safeRoomName = roomName.replace(/[.#$\/\[\]]/g, '_');
+        db.ref(`activeRooms/${safeRoomName}`).set({
+          server: serverUrl,
+          professor: currentUser.name,
+          startedAt: Date.now()
+        }).then(() => {
+          console.log('📤 강의실 서버 정보 저장:', serverUrl);
+        }).catch(err => console.error('서버 정보 저장 오류:', err));
+      }
+    }
+
+    // 강의실 서버 정보 조회 (Firebase)
+    function getRoomServer(roomName) {
+      return new Promise((resolve) => {
+        if (firebaseEnabled && db) {
+          const safeRoomName = roomName.replace(/[.#$\/\[\]]/g, '_');
+          db.ref(`activeRooms/${safeRoomName}`).once('value')
+            .then(snapshot => {
+              const data = snapshot.val();
+              if (data && data.server) {
+                resolve(data);
+              } else {
+                resolve(null);
+              }
+            })
+            .catch(() => resolve(null));
+        } else {
+          resolve(null);
+        }
+      });
+    }
+
     // 강의실 로딩
-    function loadRoom(roomName) {
+    async function loadRoom(roomName) {
+      console.log('🎓 loadRoom 호출됨:', roomName);
+      
+      if (!roomName || roomName.trim() === '') {
+        console.error('❌ loadRoom: 강의명이 비어있음');
+        alert('강의명이 설정되지 않았습니다.');
+        return;
+      }
+      
       // 교수: [교수] 성명, 학생: [학생] 성명
       currentDisplayName = currentUser.role === 'professor' 
         ? `[교수] ${currentUser.name}` 
@@ -1990,19 +2411,69 @@
       
       currentRoomName = roomName;
       document.getElementById('roomNameDisplay').textContent = roomName;
+      console.log('📋 roomNameDisplay 업데이트:', roomName);
       
-      // 선택된 서버 또는 첫 번째 서버 사용
+      // 선택된 서버
       const serverSelect = document.getElementById('serverSelect');
-      const selectedServer = serverSelect ? serverSelect.value : JITSI_SERVERS[0];
-      currentServerIndex = JITSI_SERVERS.indexOf(selectedServer);
-      if (currentServerIndex === -1) currentServerIndex = 0;
+      let selectedServer = serverSelect ? serverSelect.value : JITSI_SERVERS[0];
       
-      loadRoomWithServer(JITSI_SERVERS[currentServerIndex]);
+      if (currentUser.role === 'professor') {
+        // 교수: 선택한 서버로 접속하고 Firebase에 저장
+        currentServerIndex = JITSI_SERVERS.indexOf(selectedServer);
+        if (currentServerIndex === -1) currentServerIndex = 0;
+        
+        saveRoomServer(roomName, JITSI_SERVERS[currentServerIndex]);
+        loadRoomWithServer(JITSI_SERVERS[currentServerIndex]);
+        
+      } else {
+        // 학생: Firebase에서 교수가 사용 중인 서버 확인
+        updateServerStatus('🔍 교수님 서버 확인 중...');
+        
+        const roomInfo = await getRoomServer(roomName);
+        
+        if (roomInfo && roomInfo.server) {
+          // 교수가 사용 중인 서버로 자동 연결
+          selectedServer = roomInfo.server;
+          currentServerIndex = JITSI_SERVERS.indexOf(selectedServer);
+          if (currentServerIndex === -1) currentServerIndex = 0;
+          
+          // 서버 선택 드롭다운 업데이트
+          if (serverSelect) {
+            serverSelect.value = selectedServer;
+          }
+          
+          updateServerStatus(`👨‍🏫 ${roomInfo.professor} 교수님 서버로 연결 중...`);
+          console.log(`📥 교수님 서버 확인: ${selectedServer}`);
+          
+          loadRoomWithServer(selectedServer);
+        } else {
+          // 교수 정보 없으면 선택한 서버로 접속
+          currentServerIndex = JITSI_SERVERS.indexOf(selectedServer);
+          if (currentServerIndex === -1) currentServerIndex = 0;
+          
+          updateServerStatus('⚠️ 교수님이 아직 접속하지 않음. 선택한 서버로 연결...');
+          loadRoomWithServer(JITSI_SERVERS[currentServerIndex]);
+        }
+      }
     }
+
+    // 디버그: 수동 Jitsi 테스트 (콘솔에서 testJitsi() 실행)
+    window.testJitsi = function() {
+      const testRoom = prompt('테스트할 강의명:', '테스트강의실');
+      if (testRoom) {
+        currentRoomName = testRoom;
+        currentDisplayName = '[테스트] 사용자';
+        document.getElementById('roomNameDisplay').textContent = testRoom;
+        loadRoomWithServer(JITSI_SERVERS[0]);
+        console.log('🧪 테스트 Jitsi 로딩:', testRoom);
+      }
+    };
 
     // 페이지 로드 시 초기화
     window.addEventListener('DOMContentLoaded', () => {
-      selectRole('professor');
+      selectRole('student');
+      // Firebase 상태 표시 적용
+      applyFirebaseStatus();
     });
 
     // ========== 출석 관리 시스템 ==========
@@ -2022,13 +2493,61 @@
       return `attendance_${currentUser.course}`;
     }
 
-    // 데이터 저장
-    function saveAttendanceData() {
-      localStorage.setItem(getStorageKey(), JSON.stringify(attendanceData));
+    function getFirebaseAttendanceKey() {
+      return currentUser.course.replace(/[.#$\/\[\]]/g, '_');
     }
 
-    // 데이터 로드
-    function loadAttendanceData() {
+    // 데이터 저장 (Firebase 또는 localStorage)
+    function saveAttendanceDataLocal() {
+      const dataToSave = {
+        ...attendanceData,
+        classStartTime: attendanceData.classStartTime ? attendanceData.classStartTime.toISOString() : null,
+        classEndTime: attendanceData.classEndTime ? attendanceData.classEndTime.toISOString() : null
+      };
+      
+      if (firebaseEnabled && db) {
+        db.ref(`attendance/${getFirebaseAttendanceKey()}`).set(dataToSave)
+          .then(() => console.log('📤 출석 데이터 Firebase 저장 완료'))
+          .catch(err => console.error('출석 저장 오류:', err));
+      }
+      // 로컬에도 저장 (백업)
+      localStorage.setItem(getStorageKey(), JSON.stringify(dataToSave));
+    }
+
+    // 데이터 로드 (Firebase 또는 localStorage)
+    function loadAttendanceDataLocal() {
+      if (firebaseEnabled && db) {
+        db.ref(`attendance/${getFirebaseAttendanceKey()}`).once('value')
+          .then(snapshot => {
+            const data = snapshot.val();
+            if (data) {
+              attendanceData = data;
+              // 날짜 문자열을 Date 객체로 변환
+              if (attendanceData.classStartTime) {
+                attendanceData.classStartTime = new Date(attendanceData.classStartTime);
+              }
+              if (attendanceData.classEndTime) {
+                attendanceData.classEndTime = new Date(attendanceData.classEndTime);
+              }
+              console.log('📥 출석 데이터 Firebase에서 로드');
+            } else {
+              // Firebase에 데이터 없으면 로컬에서 로드
+              loadFromLocalStorage();
+            }
+            syncStudentsFromCourseData();
+          })
+          .catch(err => {
+            console.error('Firebase 로드 오류:', err);
+            loadFromLocalStorage();
+            syncStudentsFromCourseData();
+          });
+      } else {
+        loadFromLocalStorage();
+        syncStudentsFromCourseData();
+      }
+    }
+    
+    function loadFromLocalStorage() {
       const saved = localStorage.getItem(getStorageKey());
       if (saved) {
         attendanceData = JSON.parse(saved);
@@ -2040,12 +2559,14 @@
           attendanceData.classEndTime = new Date(attendanceData.classEndTime);
         }
       }
-      
+    }
+    
+    function syncStudentsFromCourseData() {
       // courseData에서 수강생 목록 동기화
       const courseInfo = courseData.find(c => c.name === currentUser.course);
       if (courseInfo) {
-        attendanceData.students = courseInfo.students;
-        saveAttendanceData();
+        attendanceData.students = courseInfo.students || [];
+        saveAttendanceDataLocal();
       }
     }
 
@@ -2081,7 +2602,7 @@
       }
       
       attendanceData.students.push(name);
-      saveAttendanceData();
+      saveAttendanceDataLocal();
       renderStudentList();
       input.value = '';
       input.focus();
@@ -2090,7 +2611,7 @@
     function removeStudent(name) {
       if (confirm(`"${name}" 수강생을 삭제하시겠습니까?`)) {
         attendanceData.students = attendanceData.students.filter(s => s !== name);
-        saveAttendanceData();
+        saveAttendanceDataLocal();
         renderStudentList();
       }
     }
@@ -2149,7 +2670,7 @@
         }
       });
       
-      saveAttendanceData();
+      saveAttendanceDataLocal();
       updateClassUI();
       
       alert(`${weekNum}주차 수업이 시작되었습니다!\n시작 시간: ${formatTime(attendanceData.classStartTime)}`);
@@ -2164,7 +2685,7 @@
       // 출석 상태 최종 계산
       calculateFinalAttendance();
       
-      saveAttendanceData();
+      saveAttendanceDataLocal();
       updateClassUI();
       
       // 출석 결과 표시
@@ -2207,7 +2728,7 @@
         }
       });
       
-      saveAttendanceData();
+      saveAttendanceDataLocal();
     }
 
     function updateClassUI() {
@@ -2252,7 +2773,7 @@
         attendanceData.records[week][studentName].joinTime = new Date();
       }
       
-      saveAttendanceData();
+      saveAttendanceDataLocal();
     }
 
     function recordStudentLeave(studentName) {
@@ -2261,7 +2782,7 @@
       const week = attendanceData.currentWeek;
       if (attendanceData.records[week] && attendanceData.records[week][studentName]) {
         attendanceData.records[week][studentName].leaveTime = new Date();
-        saveAttendanceData();
+        saveAttendanceDataLocal();
       }
     }
 
@@ -2379,25 +2900,8 @@
       return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
 
-    // ========== UI 업데이트 (교수 컨트롤 표시) ==========
-    
-    const originalUpdateMainUI = updateMainUI;
-    updateMainUI = function() {
-      originalUpdateMainUI();
-      
-      const isProfessor = currentUser.role === 'professor';
-      const professorControls = document.getElementById('professorControls');
-      
-      if (isProfessor) {
-        professorControls.classList.add('show');
-        loadAttendanceData();
-        updateClassUI();
-      } else {
-        professorControls.classList.remove('show');
-        // 학생인 경우 자동 출석 체크 (학생 이름이 수강생 목록에 있는 경우)
-        checkStudentAttendance();
-      }
-    };
+    // ========== UI 업데이트 (출석 관련) ==========
+    // 교수/학생 컨트롤은 이제 헤더에 통합되어 updateMainUI()에서 처리됨
 
     // 학생 자동 출석 체크
     function checkStudentAttendance() {
@@ -2430,7 +2934,7 @@
 
     // 학생 퇴장 시 기록 (페이지 떠날 때)
     window.addEventListener('beforeunload', () => {
-      if (currentUser.role === 'student') {
+      if (currentUser.role === 'student' && currentUser.course) {
         const storageKey = `attendance_${currentUser.course}`;
         const saved = localStorage.getItem(storageKey);
         
@@ -2438,12 +2942,390 @@
           const data = JSON.parse(saved);
           if (data.isClassActive && data.records[data.currentWeek] && 
               data.records[data.currentWeek][currentUser.name]) {
-            data.records[data.currentWeek][currentUser.name].leaveTime = new Date().toISOString();
+            const leaveTime = new Date().toISOString();
+            data.records[data.currentWeek][currentUser.name].leaveTime = leaveTime;
             localStorage.setItem(storageKey, JSON.stringify(data));
+            
+            // Firebase에도 저장 (동기적으로 시도)
+            if (firebaseEnabled && db) {
+              const firebaseKey = currentUser.course.replace(/[.#$\/\[\]]/g, '_');
+              const updatePath = `attendance/${firebaseKey}/records/${data.currentWeek}/${currentUser.name}/leaveTime`;
+              db.ref(updatePath).set(leaveTime);
+              console.log('📤 퇴장시간 Firebase 저장:', leaveTime);
+            }
           }
         }
       }
     });
+    
+    // 추가: visibilitychange 이벤트로 탭 숨김 시에도 기록
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden' && currentUser.role === 'student' && currentUser.course) {
+        const storageKey = `attendance_${currentUser.course}`;
+        const saved = localStorage.getItem(storageKey);
+        
+        if (saved) {
+          const data = JSON.parse(saved);
+          if (data.isClassActive && data.records[data.currentWeek] && 
+              data.records[data.currentWeek][currentUser.name]) {
+            const leaveTime = new Date().toISOString();
+            data.records[data.currentWeek][currentUser.name].leaveTime = leaveTime;
+            localStorage.setItem(storageKey, JSON.stringify(data));
+            
+            // Firebase에도 저장
+            if (firebaseEnabled && db) {
+              const firebaseKey = currentUser.course.replace(/[.#$\/\[\]]/g, '_');
+              db.ref(`attendance/${firebaseKey}/records/${data.currentWeek}/${currentUser.name}/leaveTime`).set(leaveTime);
+              console.log('📤 퇴장시간 Firebase 저장 (탭 숨김):', leaveTime);
+            }
+          }
+        }
+      }
+    });
+
+    // ========== 학생 출석현황 모달 ==========
+    
+    function openMyAttendanceModal() {
+      document.getElementById('myAttendanceModal').classList.add('show');
+      renderMyAttendance();
+    }
+    
+    function closeMyAttendanceModal() {
+      document.getElementById('myAttendanceModal').classList.remove('show');
+    }
+    
+    async function renderMyAttendance() {
+      document.getElementById('myCourseName').textContent = currentUser.course;
+      
+      // Firebase 또는 localStorage에서 출석 데이터 로드
+      const firebaseKey = currentUser.course.replace(/[.#$\/\[\]]/g, '_');
+      let attendanceInfo = null;
+      
+      if (firebaseEnabled && db) {
+        try {
+          const snapshot = await db.ref(`attendance/${firebaseKey}`).once('value');
+          attendanceInfo = snapshot.val();
+        } catch (e) {
+          console.error('Firebase 출석 로드 오류:', e);
+        }
+      }
+      
+      // Firebase에 없으면 localStorage에서 로드
+      if (!attendanceInfo) {
+        const saved = localStorage.getItem(`attendance_${currentUser.course}`);
+        if (saved) {
+          attendanceInfo = JSON.parse(saved);
+        }
+      }
+      
+      const summaryEl = document.getElementById('myAttendanceSummary');
+      const listEl = document.getElementById('myAttendanceList');
+      
+      console.log('📋 출석 데이터 로드됨:', attendanceInfo);
+      
+      if (!attendanceInfo || !attendanceInfo.records) {
+        console.log('❌ 출석 records가 없음');
+        summaryEl.innerHTML = '';
+        listEl.innerHTML = '<div style="text-align:center;padding:20px;color:#9ca3af;">출석 기록이 없습니다.</div>';
+        return;
+      }
+      
+      console.log('📋 records 키:', Object.keys(attendanceInfo.records));
+      console.log('👤 현재 학생:', currentUser.name);
+      
+      // 내 출석 통계 계산
+      let present = 0, late = 0, absent = 0, earlyLeave = 0;
+      const weekRecords = [];
+      
+      // 가능한 주차 키 형식들 확인 ("1", "1주차", "week1" 등)
+      const possibleWeekFormats = (week) => [`${week}`, `${week}주차`, `week${week}`];
+      
+      for (let week = 1; week <= 15; week++) {
+        let record = null;
+        let weekKey = null;
+        
+        // 여러 형식으로 시도
+        for (const format of possibleWeekFormats(week)) {
+          if (attendanceInfo.records[format] && attendanceInfo.records[format][currentUser.name]) {
+            record = attendanceInfo.records[format][currentUser.name];
+            weekKey = `${week}주차`;
+            break;
+          }
+        }
+        
+        if (record) {
+          weekRecords.push({ week: weekKey, ...record });
+          
+          switch (record.status) {
+            case 'present': present++; break;
+            case 'late': late++; break;
+            case 'early-leave': earlyLeave++; break;
+            case 'absent': absent++; break;
+          }
+        }
+      }
+      
+      // 요약 표시
+      summaryEl.innerHTML = `
+        <div style="padding:12px 16px;background:#064e3b;border-radius:8px;text-align:center;min-width:70px;">
+          <div style="font-size:20px;font-weight:bold;color:#6ee7b7;">${present}</div>
+          <div style="font-size:11px;color:#9ca3af;">출석</div>
+        </div>
+        <div style="padding:12px 16px;background:#78350f;border-radius:8px;text-align:center;min-width:70px;">
+          <div style="font-size:20px;font-weight:bold;color:#fcd34d;">${late}</div>
+          <div style="font-size:11px;color:#9ca3af;">지각</div>
+        </div>
+        <div style="padding:12px 16px;background:#1e3a5f;border-radius:8px;text-align:center;min-width:70px;">
+          <div style="font-size:20px;font-weight:bold;color:#93c5fd;">${earlyLeave}</div>
+          <div style="font-size:11px;color:#9ca3af;">조퇴</div>
+        </div>
+        <div style="padding:12px 16px;background:#7f1d1d;border-radius:8px;text-align:center;min-width:70px;">
+          <div style="font-size:20px;font-weight:bold;color:#fca5a5;">${absent}</div>
+          <div style="font-size:11px;color:#9ca3af;">결석</div>
+        </div>
+      `;
+      
+      // 주차별 기록 표시
+      if (weekRecords.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center;padding:20px;color:#9ca3af;">출석 기록이 없습니다.</div>';
+      } else {
+        listEl.innerHTML = `
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead>
+              <tr style="border-bottom:1px solid #374151;">
+                <th style="padding:10px;text-align:left;color:#9ca3af;">주차</th>
+                <th style="padding:10px;text-align:center;color:#9ca3af;">상태</th>
+                <th style="padding:10px;text-align:center;color:#9ca3af;">입장시간</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${weekRecords.map(r => `
+                <tr style="border-bottom:1px solid #1f2937;">
+                  <td style="padding:10px;">${r.week}</td>
+                  <td style="padding:10px;text-align:center;">
+                    <span class="attendance-status ${r.status}">${getStatusText(r.status)}</span>
+                  </td>
+                  <td style="padding:10px;text-align:center;color:#9ca3af;">
+                    ${r.joinTime ? new Date(r.joinTime).toLocaleTimeString('ko-KR') : '-'}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+    }
+    
+    function getStatusText(status) {
+      const statusMap = {
+        'present': '출석',
+        'late': '지각',
+        'early-leave': '조퇴',
+        'absent': '결석',
+        'pending': '미정'
+      };
+      return statusMap[status] || status;
+    }
+    
+    // 학생 수동 출석하기 버튼
+    async function studentCheckIn() {
+      const firebaseKey = currentUser.course.replace(/[.#$\/\[\]]/g, '_');
+      let attendanceInfo = null;
+      
+      // Firebase에서 출석 데이터 로드
+      if (firebaseEnabled && db) {
+        try {
+          const snapshot = await db.ref(`attendance/${firebaseKey}`).once('value');
+          attendanceInfo = snapshot.val();
+        } catch (e) {
+          console.error('Firebase 출석 로드 오류:', e);
+        }
+      }
+      
+      // localStorage에서도 확인
+      if (!attendanceInfo) {
+        const saved = localStorage.getItem(`attendance_${currentUser.course}`);
+        if (saved) {
+          attendanceInfo = JSON.parse(saved);
+        }
+      }
+      
+      if (!attendanceInfo) {
+        alert('출석 정보를 찾을 수 없습니다.\n교수님이 수업을 시작하면 자동으로 출석됩니다.');
+        return;
+      }
+      
+      if (!attendanceInfo.isClassActive) {
+        alert('현재 수업이 진행 중이 아닙니다.\n교수님이 수업을 시작하면 출석할 수 있습니다.');
+        return;
+      }
+      
+      const weekKey = attendanceInfo.currentWeek;
+      if (!attendanceInfo.records) attendanceInfo.records = {};
+      if (!attendanceInfo.records[weekKey]) attendanceInfo.records[weekKey] = {};
+      
+      if (attendanceInfo.records[weekKey][currentUser.name]?.joinTime) {
+        alert('이미 출석이 완료되었습니다!');
+        return;
+      }
+      
+      // 출석 기록
+      attendanceInfo.records[weekKey][currentUser.name] = {
+        joinTime: new Date().toISOString(),
+        leaveTime: null,
+        status: 'present'
+      };
+      
+      // Firebase에 저장
+      if (firebaseEnabled && db) {
+        try {
+          await db.ref(`attendance/${firebaseKey}`).set(attendanceInfo);
+          console.log('📤 출석 Firebase 저장 완료');
+        } catch (e) {
+          console.error('Firebase 저장 오류:', e);
+        }
+      }
+      
+      // localStorage에도 저장
+      localStorage.setItem(`attendance_${currentUser.course}`, JSON.stringify(attendanceInfo));
+      
+      alert('✅ 출석이 완료되었습니다!');
+      
+      // 출석하기 버튼 비활성화
+      const btnCheckIn = document.getElementById('btnCheckIn');
+      if (btnCheckIn) {
+        btnCheckIn.disabled = true;
+        btnCheckIn.textContent = '✅ 출석완료';
+      }
+    }
+
+    // ========== Firebase 진단 기능 ==========
+    
+    async function checkFirebaseStatus() {
+      let report = '===== Firebase 진단 결과 =====\n\n';
+      
+      // 1. Firebase 연결 상태
+      report += `1. Firebase 활성화: ${firebaseEnabled ? '✅ 예' : '❌ 아니오'}\n`;
+      report += `2. DB 객체: ${db ? '✅ 있음' : '❌ 없음'}\n\n`;
+      
+      // 2. 강의 데이터 확인
+      report += '===== 강의 데이터 =====\n';
+      report += `로컬 강의 수: ${courseData.length}개\n`;
+      if (courseData.length > 0) {
+        courseData.forEach(c => {
+          report += `  - ${c.name} (교수: ${c.professor}, 학생: ${c.students?.length || 0}명)\n`;
+        });
+      }
+      
+      // 3. Firebase에서 직접 읽기 테스트
+      if (firebaseEnabled && db) {
+        report += '\n===== Firebase 직접 조회 =====\n';
+        
+        try {
+          // 강의 데이터
+          const coursesSnapshot = await db.ref('courses').once('value');
+          const firebaseCourses = coursesSnapshot.val();
+          if (firebaseCourses) {
+            const courseList = Object.values(firebaseCourses);
+            report += `Firebase 강의 수: ${courseList.length}개\n`;
+            courseList.forEach(c => {
+              report += `  - ${c.name} (교수: ${c.professor}, 학생: ${c.students?.length || 0}명)\n`;
+            });
+          } else {
+            report += 'Firebase 강의: 없음 (null)\n';
+          }
+          
+          // 출석 데이터
+          const attendanceSnapshot = await db.ref('attendance').once('value');
+          const firebaseAttendance = attendanceSnapshot.val();
+          report += `\nFirebase 출석 데이터:\n`;
+          if (firebaseAttendance) {
+            Object.keys(firebaseAttendance).forEach(key => {
+              const att = firebaseAttendance[key];
+              report += `  - ${key}: 수업중=${att.isClassActive}, 주차=${att.currentWeek || '없음'}\n`;
+              if (att.records) {
+                Object.keys(att.records).forEach(week => {
+                  const weekData = att.records[week];
+                  const studentCount = Object.keys(weekData).length;
+                  report += `    ${week}: ${studentCount}명 기록\n`;
+                });
+              }
+            });
+          } else {
+            report += '  없음 (null)\n';
+          }
+          
+          // 활성 강의실
+          const activeRoomsSnapshot = await db.ref('activeRooms').once('value');
+          const activeRooms = activeRoomsSnapshot.val();
+          report += `\nFirebase 활성 강의실:\n`;
+          if (activeRooms) {
+            Object.keys(activeRooms).forEach(key => {
+              const room = activeRooms[key];
+              report += `  - ${key}: 서버=${room.server}, 교수=${room.professor}\n`;
+            });
+          } else {
+            report += '  없음\n';
+          }
+          
+        } catch (err) {
+          report += `Firebase 조회 오류: ${err.message}\n`;
+        }
+      }
+      
+      // 4. localStorage 확인
+      report += '\n===== localStorage 데이터 =====\n';
+      const localCourses = localStorage.getItem('gcu_courses');
+      report += `로컬 강의: ${localCourses ? JSON.parse(localCourses).length + '개' : '없음'}\n`;
+      
+      // 출석 데이터 키 확인
+      const attendanceKeys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('attendance_')) {
+          attendanceKeys.push(key);
+        }
+      }
+      report += `로컬 출석 데이터: ${attendanceKeys.length}개\n`;
+      attendanceKeys.forEach(key => {
+        const data = JSON.parse(localStorage.getItem(key));
+        report += `  - ${key}: 수업중=${data.isClassActive}, 주차=${data.currentWeek || '없음'}\n`;
+      });
+      
+      report += '\n===== 진단 완료 =====';
+      
+      console.log(report);
+      alert(report);
+    }
+    
+    // 테스트용: Firebase에 데이터 쓰기 테스트
+    async function testFirebaseWrite() {
+      if (!firebaseEnabled || !db) {
+        alert('Firebase가 연결되지 않았습니다.');
+        return;
+      }
+      
+      const testData = {
+        test: true,
+        timestamp: Date.now(),
+        message: 'Firebase 쓰기 테스트'
+      };
+      
+      try {
+        await db.ref('_test').set(testData);
+        alert('✅ Firebase 쓰기 성공!\n\n데이터: ' + JSON.stringify(testData));
+        
+        // 바로 읽기 테스트
+        const snapshot = await db.ref('_test').once('value');
+        const readData = snapshot.val();
+        console.log('읽기 테스트:', readData);
+        
+        // 테스트 데이터 삭제
+        await db.ref('_test').remove();
+      } catch (err) {
+        alert('❌ Firebase 쓰기 실패!\n\n오류: ' + err.message);
+      }
+    }
 
     // ========== PWA 설치 기능 ==========
     let deferredPrompt = null;
