@@ -4,6 +4,15 @@
   <meta charset="UTF-8" />
   <title>온라인 강의실</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  
+  <!-- PWA 설정 -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="GCU 강의실" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
 
   <style>
     * { box-sizing: border-box; }
@@ -96,13 +105,23 @@
       color: #60a5fa;
     }
 
+    .role-btn.active.admin {
+      border-color: #8b5cf6;
+      background: rgba(139, 92, 246, 0.1);
+      color: #a78bfa;
+    }
+
     .role-btn .role-icon {
-      font-size: 32px;
+      font-size: 28px;
     }
 
     .role-btn .role-label {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
+    }
+
+    .form-group.hidden {
+      display: none;
     }
 
     .form-group {
@@ -305,6 +324,489 @@
         justify-content: space-between;
       }
     }
+
+    /* ========== PWA 설치 버튼 ========== */
+    .install-btn {
+      display: none;
+      width: 100%;
+      padding: 12px;
+      margin-top: 12px;
+      border: 2px dashed #10b981;
+      border-radius: 10px;
+      background: rgba(16, 185, 129, 0.1);
+      color: #6ee7b7;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .install-btn:hover {
+      background: rgba(16, 185, 129, 0.2);
+      border-style: solid;
+    }
+
+    .install-btn.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .install-guide {
+      display: none;
+      margin-top: 12px;
+      padding: 12px;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid #3b82f6;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #93c5fd;
+      text-align: center;
+    }
+
+    .install-guide.show {
+      display: block;
+    }
+
+    /* ========== 교수 컨트롤 바 ========== */
+    .professor-controls {
+      display: none;
+      gap: 8px;
+      padding: 10px;
+      background: #020617;
+      border-bottom: 1px solid #1f2937;
+      flex-wrap: wrap;
+    }
+
+    .professor-controls.show {
+      display: flex;
+    }
+
+    .ctrl-btn {
+      padding: 8px 16px;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      background: #1f2937;
+      color: #e5e7eb;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ctrl-btn:hover {
+      background: #374151;
+    }
+
+    .ctrl-btn.primary {
+      background: #2563eb;
+      border-color: #2563eb;
+      color: white;
+    }
+
+    .ctrl-btn.primary:hover {
+      background: #1d4ed8;
+    }
+
+    .ctrl-btn.danger {
+      background: #dc2626;
+      border-color: #dc2626;
+      color: white;
+    }
+
+    .ctrl-btn.danger:hover {
+      background: #b91c1c;
+    }
+
+    .ctrl-btn.success {
+      background: #16a34a;
+      border-color: #16a34a;
+      color: white;
+    }
+
+    .ctrl-btn.success:hover {
+      background: #15803d;
+    }
+
+    .ctrl-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .class-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #0f172a;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-left: auto;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #6b7280;
+    }
+
+    .status-dot.live {
+      background: #22c55e;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* ========== 모달 ========== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 20px;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal {
+      background: #0f172a;
+      border: 1px solid #1f2937;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #1f2937;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 18px;
+      color: #f1f5f9;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: #9ca3af;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .modal-close:hover {
+      color: #f1f5f9;
+    }
+
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .modal-footer {
+      padding: 16px 20px;
+      border-top: 1px solid #1f2937;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* ========== 수강생 관리 ========== */
+    .student-input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .student-input-row input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 14px;
+    }
+
+    .student-input-row input:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+
+    .student-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .student-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: #1f2937;
+      border-radius: 8px;
+    }
+
+    .student-item .student-name {
+      font-size: 14px;
+    }
+
+    .student-item .delete-btn {
+      background: none;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 0;
+    }
+
+    .student-item .delete-btn:hover {
+      color: #f87171;
+    }
+
+    .empty-list {
+      text-align: center;
+      color: #6b7280;
+      padding: 30px;
+      font-size: 14px;
+    }
+
+    /* ========== 출석부 테이블 ========== */
+    .week-selector {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .week-selector label {
+      font-size: 14px;
+      color: #9ca3af;
+    }
+
+    .week-selector select {
+      padding: 8px 12px;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 14px;
+    }
+
+    .attendance-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .attendance-table th,
+    .attendance-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #1f2937;
+    }
+
+    .attendance-table th {
+      background: #020617;
+      color: #9ca3af;
+      font-weight: 600;
+    }
+
+    .attendance-table tr:hover {
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    .attendance-status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .attendance-status.present {
+      background: rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+    }
+
+    .attendance-status.late {
+      background: rgba(251, 191, 36, 0.2);
+      color: #fbbf24;
+    }
+
+    .attendance-status.early-leave {
+      background: rgba(249, 115, 22, 0.2);
+      color: #fb923c;
+    }
+
+    .attendance-status.absent {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+    }
+
+    .attendance-status.pending {
+      background: rgba(107, 114, 128, 0.2);
+      color: #9ca3af;
+    }
+
+    .time-info {
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .attendance-summary {
+      display: flex;
+      gap: 16px;
+      margin-top: 16px;
+      padding: 12px;
+      background: #020617;
+      border-radius: 8px;
+      flex-wrap: wrap;
+    }
+
+    .summary-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+    }
+
+    .summary-item .count {
+      font-weight: 700;
+    }
+
+    /* ========== 운영자 배지 ========== */
+    .user-badge.admin {
+      border: 1px solid #8b5cf6;
+      color: #c4b5fd;
+    }
+
+    /* ========== 운영자 컨트롤 바 ========== */
+    .admin-controls {
+      display: none;
+      gap: 8px;
+      padding: 10px;
+      background: #020617;
+      border-bottom: 1px solid #1f2937;
+      flex-wrap: wrap;
+    }
+
+    .admin-controls.show {
+      display: flex;
+    }
+
+    /* ========== 강의 관리 ========== */
+    .course-card {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .course-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .course-card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #f1f5f9;
+    }
+
+    .course-card-info {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 13px;
+      color: #9ca3af;
+    }
+
+    .course-card-info span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .course-card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .admin-form-group {
+      margin-bottom: 16px;
+    }
+
+    .admin-form-group label {
+      display: block;
+      font-size: 13px;
+      color: #9ca3af;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .admin-form-group input,
+    .admin-form-group textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 14px;
+    }
+
+    .admin-form-group textarea {
+      min-height: 120px;
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    .admin-form-group input:focus,
+    .admin-form-group textarea:focus {
+      outline: none;
+      border-color: #8b5cf6;
+    }
+
+    .admin-form-group .help-text {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    .no-courses {
+      text-align: center;
+      padding: 40px;
+      color: #6b7280;
+    }
   </style>
 </head>
 <body>
@@ -313,11 +815,15 @@
   <div class="login-overlay" id="loginOverlay">
     <div class="login-container">
       <div class="login-header">
-        <h1>🎓 김천대학교 상담심리학과 온라인 강의실</h1>
+        <h1>🎓 온라인 강의실</h1>
       </div>
 
       <!-- 역할 선택 -->
       <div class="role-selector">
+        <button type="button" class="role-btn" id="btnAdmin" onclick="selectRole('admin')">
+          <span class="role-icon">⚙️</span>
+          <span class="role-label">운영</span>
+        </button>
         <button type="button" class="role-btn active" id="btnProfessor" onclick="selectRole('professor')">
           <span class="role-icon">👨‍🏫</span>
           <span class="role-label">교수</span>
@@ -331,24 +837,34 @@
       <!-- 입력 폼 -->
       <form id="loginForm" onsubmit="handleLogin(event)">
         <div class="form-group">
-          <label for="inputName">이름 *</label>
+          <label for="inputName" id="labelName">이름 *</label>
           <input type="text" id="inputName" placeholder="홍길동" required />
         </div>
 
-        <div class="form-group">
+        <div class="form-group hidden" id="groupEmployeeId">
           <label for="inputEmployeeId" id="labelEmployeeId">사번 *</label>
-          <input type="password" id="inputEmployeeId" placeholder="사번 입력" required />
+          <input type="password" id="inputEmployeeId" placeholder="사번 입력" />
         </div>
 
-        <div class="form-group">
+        <div class="form-group" id="groupCourse">
           <label for="inputCourse">강의명 *</label>
           <input type="text" id="inputCourse" placeholder="예: 성경개론" required />
         </div>
 
-        <button type="submit" class="submit-btn">
+        <button type="submit" class="submit-btn" id="submitBtn">
           🚀 강의실 입장
         </button>
       </form>
+
+      <!-- PWA 설치 버튼 -->
+      <button type="button" class="install-btn" id="installBtn" onclick="installApp()">
+        📲 홈 화면에 앱 추가
+      </button>
+      
+      <!-- iOS 설치 가이드 -->
+      <div class="install-guide" id="iosGuide">
+        📱 iPhone/iPad: 하단의 <b>공유 버튼</b> → <b>"홈 화면에 추가"</b>를 눌러주세요
+      </div>
 
       <div class="login-footer">
         김천대학교 상담심리학과
@@ -371,6 +887,33 @@
         <button class="logout-btn" onclick="handleLogout()">로그아웃</button>
       </div>
     </header>
+
+    <!-- 운영자 전용 컨트롤 바 -->
+    <div class="admin-controls" id="adminControls">
+      <button class="ctrl-btn primary" onclick="openCourseModal()">
+        📚 강의 관리
+      </button>
+      <button class="ctrl-btn" onclick="openAllAttendanceModal()">
+        📋 전체 출석부
+      </button>
+    </div>
+
+    <!-- 교수 전용 컨트롤 바 -->
+    <div class="professor-controls" id="professorControls">
+      <button class="ctrl-btn primary" id="btnStartClass" onclick="startClass()">
+        ▶️ 수업시작
+      </button>
+      <button class="ctrl-btn danger" id="btnEndClass" onclick="endClass()" disabled>
+        ⏹️ 수업종료
+      </button>
+      <button class="ctrl-btn" onclick="openAttendanceModal()">
+        📋 출석부
+      </button>
+      <div class="class-status">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="classStatusText">수업 대기중</span>
+      </div>
+    </div>
 
     <main>
       <!-- Jitsi 영상영역 -->
@@ -397,37 +940,229 @@
     </main>
   </div>
 
+  <!-- ========== 수강생 관리 모달 ========== -->
+  <div class="modal-overlay" id="studentModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>👥 수강생 관리</h2>
+        <button class="modal-close" onclick="closeStudentModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="student-input-row">
+          <input type="text" id="newStudentName" placeholder="수강생 이름 입력" onkeypress="handleStudentKeypress(event)" />
+          <button class="ctrl-btn primary" onclick="addStudent()">추가</button>
+        </div>
+        <div class="student-list" id="studentList">
+          <div class="empty-list">등록된 수강생이 없습니다.</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="ctrl-btn" onclick="closeStudentModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 출석부 모달 ========== -->
+  <div class="modal-overlay" id="attendanceModal">
+    <div class="modal" style="max-width: 900px;">
+      <div class="modal-header">
+        <h2>📋 출석부</h2>
+        <button class="modal-close" onclick="closeAttendanceModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="week-selector">
+          <label>주차 선택:</label>
+          <select id="weekSelect" onchange="renderAttendanceTable()">
+            <option value="1">1주차</option>
+            <option value="2">2주차</option>
+            <option value="3">3주차</option>
+            <option value="4">4주차</option>
+            <option value="5">5주차</option>
+            <option value="6">6주차</option>
+            <option value="7">7주차</option>
+            <option value="8">8주차</option>
+            <option value="9">9주차</option>
+            <option value="10">10주차</option>
+            <option value="11">11주차</option>
+            <option value="12">12주차</option>
+            <option value="13">13주차</option>
+            <option value="14">14주차</option>
+            <option value="15">15주차</option>
+            <option value="16">16주차</option>
+          </select>
+          <button class="ctrl-btn" onclick="exportAttendance()">📥 내보내기</button>
+        </div>
+        <table class="attendance-table">
+          <thead>
+            <tr>
+              <th>번호</th>
+              <th>이름</th>
+              <th>입장시간</th>
+              <th>퇴장시간</th>
+              <th>출석상태</th>
+            </tr>
+          </thead>
+          <tbody id="attendanceTableBody">
+          </tbody>
+        </table>
+        <div class="attendance-summary" id="attendanceSummary">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="ctrl-btn" onclick="closeAttendanceModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 강의 관리 모달 (운영자용) ========== -->
+  <div class="modal-overlay" id="courseModal">
+    <div class="modal" style="max-width: 700px;">
+      <div class="modal-header">
+        <h2>📚 강의 관리</h2>
+        <button class="modal-close" onclick="closeCourseModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- 강의 추가 폼 -->
+        <div style="background:#1e293b;padding:16px;border-radius:12px;margin-bottom:20px;">
+          <h3 style="margin:0 0 16px 0;font-size:15px;color:#f1f5f9;">➕ 새 강의 등록</h3>
+          <div class="admin-form-group">
+            <label>강의명 *</label>
+            <input type="text" id="newCourseName" placeholder="예: 성경개론" />
+          </div>
+          <div class="admin-form-group">
+            <label>담당교수명 *</label>
+            <input type="text" id="newProfessorName" placeholder="예: 홍길동" />
+          </div>
+          <div class="admin-form-group">
+            <label>수강생 명단</label>
+            <textarea id="newStudentList" placeholder="한 줄에 한 명씩 입력&#10;예:&#10;김철수&#10;이영희&#10;박민수"></textarea>
+            <div class="help-text">한 줄에 한 명씩 입력해주세요</div>
+          </div>
+          <button class="ctrl-btn success" onclick="addCourse()" style="width:100%;">강의 등록</button>
+        </div>
+
+        <!-- 등록된 강의 목록 -->
+        <h3 style="margin:0 0 12px 0;font-size:15px;color:#9ca3af;">📋 등록된 강의 목록</h3>
+        <div id="courseList">
+          <div class="no-courses">등록된 강의가 없습니다.</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="ctrl-btn" onclick="closeCourseModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 강의 수정 모달 ========== -->
+  <div class="modal-overlay" id="editCourseModal">
+    <div class="modal" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2>✏️ 강의 수정</h2>
+        <button class="modal-close" onclick="closeEditCourseModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editCourseId" />
+        <div class="admin-form-group">
+          <label>강의명 *</label>
+          <input type="text" id="editCourseName" />
+        </div>
+        <div class="admin-form-group">
+          <label>담당교수명 *</label>
+          <input type="text" id="editProfessorName" />
+        </div>
+        <div class="admin-form-group">
+          <label>수강생 명단</label>
+          <textarea id="editStudentList"></textarea>
+          <div class="help-text">한 줄에 한 명씩 입력해주세요</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="ctrl-btn" onclick="closeEditCourseModal()">취소</button>
+        <button class="ctrl-btn primary" onclick="saveCourseEdit()">저장</button>
+      </div>
+    </div>
+  </div>
+
   <script>
+    // ========== 운영자 인증 정보 ==========
+    const ADMIN_CREDENTIALS = {
+      name: '최준일',
+      employeeId: '19930007'
+    };
+
     // 현재 사용자 정보
     let currentUser = {
-      role: 'professor',  // 'professor' 또는 'student'
+      role: 'professor',  // 'admin', 'professor', 'student'
       name: '',
       course: ''
     };
 
+    // 강의 데이터 (운영자가 관리)
+    let courseData = [];  // { id, name, professor, students: [] }
+
     // DOM 요소
     const loginOverlay = document.getElementById('loginOverlay');
     const mainApp = document.getElementById('mainApp');
+    const btnAdmin = document.getElementById('btnAdmin');
     const btnProfessor = document.getElementById('btnProfessor');
     const btnStudent = document.getElementById('btnStudent');
+
+    // 강의 데이터 로드
+    function loadCourseData() {
+      const saved = localStorage.getItem('gcu_courses');
+      if (saved) {
+        courseData = JSON.parse(saved);
+      }
+    }
+
+    // 강의 데이터 저장
+    function saveCourseData() {
+      localStorage.setItem('gcu_courses', JSON.stringify(courseData));
+    }
+
+    // 초기화 시 데이터 로드
+    loadCourseData();
 
     // 역할 선택
     function selectRole(role) {
       currentUser.role = role;
 
-      const labelId = document.getElementById('labelEmployeeId');
-      const inputId = document.getElementById('inputEmployeeId');
+      // 모든 버튼 비활성화
+      btnAdmin.classList.remove('active', 'admin');
+      btnProfessor.classList.remove('active');
+      btnStudent.classList.remove('active');
 
-      if (role === 'professor') {
+      // 폼 요소
+      const groupEmployeeId = document.getElementById('groupEmployeeId');
+      const groupCourse = document.getElementById('groupCourse');
+      const labelEmployeeId = document.getElementById('labelEmployeeId');
+      const inputEmployeeId = document.getElementById('inputEmployeeId');
+      const inputCourse = document.getElementById('inputCourse');
+      const submitBtn = document.getElementById('submitBtn');
+
+      if (role === 'admin') {
+        btnAdmin.classList.add('active', 'admin');
+        groupEmployeeId.classList.remove('hidden');
+        groupCourse.classList.add('hidden');
+        labelEmployeeId.textContent = '사번 *';
+        inputEmployeeId.placeholder = '사번 입력';
+        inputEmployeeId.required = true;
+        inputCourse.required = false;
+        submitBtn.textContent = '⚙️ 운영 시작';
+      } else if (role === 'professor') {
         btnProfessor.classList.add('active');
-        btnStudent.classList.remove('active');
-        labelId.textContent = '사번 *';
-        inputId.placeholder = '사번 입력';
+        groupEmployeeId.classList.add('hidden');
+        groupCourse.classList.remove('hidden');
+        inputEmployeeId.required = false;
+        inputCourse.required = true;
+        submitBtn.textContent = '🚀 강의실 입장';
       } else {
-        btnProfessor.classList.remove('active');
         btnStudent.classList.add('active');
-        labelId.textContent = '학번 *';
-        inputId.placeholder = '학번 입력';
+        groupEmployeeId.classList.add('hidden');
+        groupCourse.classList.remove('hidden');
+        inputEmployeeId.required = false;
+        inputCourse.required = true;
+        submitBtn.textContent = '🚀 강의실 입장';
       }
     }
 
@@ -439,10 +1174,48 @@
       const employeeId = document.getElementById('inputEmployeeId').value.trim();
       const course = document.getElementById('inputCourse').value.trim();
 
-      if (!name || !employeeId || !course) {
-        const idType = currentUser.role === 'professor' ? '사번' : '학번';
-        alert(`이름, ${idType}, 강의명을 모두 입력해주세요.`);
+      // 운영자 로그인
+      if (currentUser.role === 'admin') {
+        if (name !== ADMIN_CREDENTIALS.name || employeeId !== ADMIN_CREDENTIALS.employeeId) {
+          alert('운영자 인증에 실패했습니다.\n이름과 사번을 확인해주세요.');
+          return;
+        }
+        currentUser.name = name;
+        currentUser.course = '';
+        
+        loginOverlay.classList.add('hidden');
+        mainApp.classList.add('show');
+        updateMainUI();
         return;
+      }
+
+      // 교수/학생 로그인
+      if (!name || !course) {
+        alert('이름과 강의명을 모두 입력해주세요.');
+        return;
+      }
+
+      // 강의 존재 확인
+      const courseInfo = courseData.find(c => c.name === course);
+      if (!courseInfo) {
+        alert(`"${course}" 강의가 등록되어 있지 않습니다.\n운영자에게 문의해주세요.`);
+        return;
+      }
+
+      // 교수 검증
+      if (currentUser.role === 'professor') {
+        if (courseInfo.professor !== name) {
+          alert(`"${course}" 강의의 담당교수가 아닙니다.\n등록된 담당교수: ${courseInfo.professor}`);
+          return;
+        }
+      }
+
+      // 학생 검증
+      if (currentUser.role === 'student') {
+        if (!courseInfo.students.includes(name)) {
+          alert(`"${course}" 강의의 수강생 명단에 "${name}"이(가) 없습니다.\n운영자에게 문의해주세요.`);
+          return;
+        }
       }
 
       currentUser.name = name;
@@ -455,37 +1228,56 @@
       // UI 업데이트
       updateMainUI();
 
-      // Jitsi 강의실 로드
-      loadRoom(course);
+      // Jitsi 강의실 로드 (운영자가 아닌 경우)
+      if (currentUser.role !== 'admin') {
+        loadRoom(course);
+      }
     }
 
     // 메인 UI 업데이트
     function updateMainUI() {
-      const isProfessor = currentUser.role === 'professor';
-
-      // 헤더 타이틀
-      // 사용자 배지
       const userBadge = document.getElementById('userBadge');
       const badgeIcon = document.getElementById('badgeIcon');
       const badgeText = document.getElementById('badgeText');
+      const adminControls = document.getElementById('adminControls');
+      const professorControls = document.getElementById('professorControls');
 
-      if (isProfessor) {
+      // 모든 컨트롤 숨기기
+      adminControls.classList.remove('show');
+      professorControls.classList.remove('show');
+
+      if (currentUser.role === 'admin') {
+        userBadge.className = 'user-badge admin';
+        badgeIcon.textContent = '⚙️';
+        badgeText.textContent = `${currentUser.name} 운영자`;
+        adminControls.classList.add('show');
+        // 운영자는 Jitsi 프레임 숨기기
+        document.getElementById('jitsiFrame').style.display = 'none';
+        document.querySelector('.jitsi-header').innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af;">운영자 모드 - 상단 메뉴에서 강의를 관리하세요</div>';
+      } else if (currentUser.role === 'professor') {
         userBadge.className = 'user-badge professor';
         badgeIcon.textContent = '👨‍🏫';
         badgeText.textContent = `${currentUser.name} 교수`;
+        professorControls.classList.add('show');
+        document.getElementById('jitsiFrame').style.display = '';
+        loadAttendanceData();
+        updateClassUI();
       } else {
         userBadge.className = 'user-badge student';
         badgeIcon.textContent = '👨‍🎓';
         badgeText.textContent = `${currentUser.name} 학생`;
+        document.getElementById('jitsiFrame').style.display = '';
+        checkStudentAttendance();
       }
-
     }
 
     // 로그아웃
     function handleLogout() {
-      if (confirm('강의실에서 나가시겠습니까?')) {
+      const message = currentUser.role === 'admin' ? '운영을 종료하시겠습니까?' : '강의실에서 나가시겠습니까?';
+      if (confirm(message)) {
         // Jitsi 프레임 초기화
         document.getElementById('jitsiFrame').src = '';
+        document.getElementById('jitsiFrame').style.display = '';
 
         // 폼 초기화
         document.getElementById('loginForm').reset();
@@ -501,7 +1293,191 @@
           name: '',
           course: ''
         };
+
+        // Jitsi 헤더 복원
+        document.querySelector('.jitsi-header').innerHTML = `
+          <div>
+            현재 강의명: <span class="room-name-display" id="roomNameDisplay">-</span>
+          </div>
+          <div class="small-note">
+            처음 접속 시 브라우저가 카메라/마이크 권한을 요청하면 <b>허용</b>을 눌러주세요.
+          </div>
+        `;
       }
+    }
+
+    // ========== 강의 관리 (운영자용) ==========
+    
+    function openCourseModal() {
+      document.getElementById('courseModal').classList.add('show');
+      renderCourseList();
+    }
+
+    function closeCourseModal() {
+      document.getElementById('courseModal').classList.remove('show');
+    }
+
+    function addCourse() {
+      const name = document.getElementById('newCourseName').value.trim();
+      const professor = document.getElementById('newProfessorName').value.trim();
+      const studentText = document.getElementById('newStudentList').value.trim();
+
+      if (!name || !professor) {
+        alert('강의명과 담당교수명을 입력해주세요.');
+        return;
+      }
+
+      // 중복 확인
+      if (courseData.find(c => c.name === name)) {
+        alert('이미 등록된 강의명입니다.');
+        return;
+      }
+
+      // 수강생 파싱
+      const students = studentText ? studentText.split('\n').map(s => s.trim()).filter(s => s) : [];
+
+      const newCourse = {
+        id: Date.now().toString(),
+        name,
+        professor,
+        students
+      };
+
+      courseData.push(newCourse);
+      saveCourseData();
+
+      // 출석 데이터도 초기화
+      const attendanceKey = `attendance_${name}`;
+      if (!localStorage.getItem(attendanceKey)) {
+        localStorage.setItem(attendanceKey, JSON.stringify({
+          students: students,
+          classStartTime: null,
+          classEndTime: null,
+          isClassActive: false,
+          currentWeek: 1,
+          records: {}
+        }));
+      }
+
+      // 폼 초기화
+      document.getElementById('newCourseName').value = '';
+      document.getElementById('newProfessorName').value = '';
+      document.getElementById('newStudentList').value = '';
+
+      renderCourseList();
+      alert(`"${name}" 강의가 등록되었습니다.`);
+    }
+
+    function renderCourseList() {
+      const container = document.getElementById('courseList');
+
+      if (courseData.length === 0) {
+        container.innerHTML = '<div class="no-courses">등록된 강의가 없습니다.</div>';
+        return;
+      }
+
+      container.innerHTML = courseData.map(course => `
+        <div class="course-card">
+          <div class="course-card-header">
+            <span class="course-card-title">📖 ${course.name}</span>
+          </div>
+          <div class="course-card-info">
+            <span>👨‍🏫 담당교수: <strong>${course.professor}</strong></span>
+            <span>👥 수강생: <strong>${course.students.length}명</strong></span>
+          </div>
+          <div class="course-card-actions">
+            <button class="ctrl-btn" onclick="editCourse('${course.id}')">✏️ 수정</button>
+            <button class="ctrl-btn danger" onclick="deleteCourse('${course.id}')">🗑️ 삭제</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function editCourse(courseId) {
+      const course = courseData.find(c => c.id === courseId);
+      if (!course) return;
+
+      document.getElementById('editCourseId').value = courseId;
+      document.getElementById('editCourseName').value = course.name;
+      document.getElementById('editProfessorName').value = course.professor;
+      document.getElementById('editStudentList').value = course.students.join('\n');
+
+      document.getElementById('editCourseModal').classList.add('show');
+    }
+
+    function closeEditCourseModal() {
+      document.getElementById('editCourseModal').classList.remove('show');
+    }
+
+    function saveCourseEdit() {
+      const courseId = document.getElementById('editCourseId').value;
+      const name = document.getElementById('editCourseName').value.trim();
+      const professor = document.getElementById('editProfessorName').value.trim();
+      const studentText = document.getElementById('editStudentList').value.trim();
+
+      if (!name || !professor) {
+        alert('강의명과 담당교수명을 입력해주세요.');
+        return;
+      }
+
+      const courseIndex = courseData.findIndex(c => c.id === courseId);
+      if (courseIndex === -1) return;
+
+      const oldName = courseData[courseIndex].name;
+      const students = studentText ? studentText.split('\n').map(s => s.trim()).filter(s => s) : [];
+
+      courseData[courseIndex] = {
+        ...courseData[courseIndex],
+        name,
+        professor,
+        students
+      };
+
+      saveCourseData();
+
+      // 출석 데이터 업데이트
+      const attendanceKey = `attendance_${name}`;
+      const oldAttendanceKey = `attendance_${oldName}`;
+      
+      // 강의명이 변경된 경우 출석 데이터 키도 변경
+      if (oldName !== name) {
+        const oldData = localStorage.getItem(oldAttendanceKey);
+        if (oldData) {
+          localStorage.setItem(attendanceKey, oldData);
+          localStorage.removeItem(oldAttendanceKey);
+        }
+      }
+
+      // 수강생 목록 업데이트
+      const attendanceData = localStorage.getItem(attendanceKey);
+      if (attendanceData) {
+        const data = JSON.parse(attendanceData);
+        data.students = students;
+        localStorage.setItem(attendanceKey, JSON.stringify(data));
+      }
+
+      closeEditCourseModal();
+      renderCourseList();
+      alert('강의 정보가 수정되었습니다.');
+    }
+
+    function deleteCourse(courseId) {
+      const course = courseData.find(c => c.id === courseId);
+      if (!course) return;
+
+      if (!confirm(`"${course.name}" 강의를 삭제하시겠습니까?\n출석 데이터도 함께 삭제됩니다.`)) return;
+
+      // 출석 데이터 삭제
+      localStorage.removeItem(`attendance_${course.name}`);
+
+      courseData = courseData.filter(c => c.id !== courseId);
+      saveCourseData();
+      renderCourseList();
+      alert('강의가 삭제되었습니다.');
+    }
+
+    function openAllAttendanceModal() {
+      alert('전체 출석부 기능은 준비 중입니다.');
     }
 
     // Jitsi URL 생성
@@ -529,6 +1505,515 @@
     // 페이지 로드 시 초기화
     window.addEventListener('DOMContentLoaded', () => {
       selectRole('professor');
+    });
+
+    // ========== 출석 관리 시스템 ==========
+    
+    // 출석 데이터 구조
+    let attendanceData = {
+      students: [],        // 수강생 목록
+      classStartTime: null, // 수업 시작 시간
+      classEndTime: null,   // 수업 종료 시간
+      isClassActive: false, // 수업 진행 중 여부
+      currentWeek: 1,       // 현재 주차
+      records: {}           // 주차별 출석 기록 { week: { studentName: { joinTime, leaveTime, status } } }
+    };
+
+    // 로컬스토리지 키 생성 (강의명 기반)
+    function getStorageKey() {
+      return `attendance_${currentUser.course}`;
+    }
+
+    // 데이터 저장
+    function saveAttendanceData() {
+      localStorage.setItem(getStorageKey(), JSON.stringify(attendanceData));
+    }
+
+    // 데이터 로드
+    function loadAttendanceData() {
+      const saved = localStorage.getItem(getStorageKey());
+      if (saved) {
+        attendanceData = JSON.parse(saved);
+        // 날짜 문자열을 Date 객체로 변환
+        if (attendanceData.classStartTime) {
+          attendanceData.classStartTime = new Date(attendanceData.classStartTime);
+        }
+        if (attendanceData.classEndTime) {
+          attendanceData.classEndTime = new Date(attendanceData.classEndTime);
+        }
+      }
+      
+      // courseData에서 수강생 목록 동기화
+      const courseInfo = courseData.find(c => c.name === currentUser.course);
+      if (courseInfo) {
+        attendanceData.students = courseInfo.students;
+        saveAttendanceData();
+      }
+    }
+
+    // ========== 수강생 관리 ==========
+    
+    function openStudentModal() {
+      document.getElementById('studentModal').classList.add('show');
+      renderStudentList();
+    }
+
+    function closeStudentModal() {
+      document.getElementById('studentModal').classList.remove('show');
+    }
+
+    function handleStudentKeypress(e) {
+      if (e.key === 'Enter') {
+        addStudent();
+      }
+    }
+
+    function addStudent() {
+      const input = document.getElementById('newStudentName');
+      const name = input.value.trim();
+      
+      if (!name) {
+        alert('수강생 이름을 입력해주세요.');
+        return;
+      }
+      
+      if (attendanceData.students.includes(name)) {
+        alert('이미 등록된 수강생입니다.');
+        return;
+      }
+      
+      attendanceData.students.push(name);
+      saveAttendanceData();
+      renderStudentList();
+      input.value = '';
+      input.focus();
+    }
+
+    function removeStudent(name) {
+      if (confirm(`"${name}" 수강생을 삭제하시겠습니까?`)) {
+        attendanceData.students = attendanceData.students.filter(s => s !== name);
+        saveAttendanceData();
+        renderStudentList();
+      }
+    }
+
+    function renderStudentList() {
+      const container = document.getElementById('studentList');
+      
+      if (attendanceData.students.length === 0) {
+        container.innerHTML = '<div class="empty-list">등록된 수강생이 없습니다.</div>';
+        return;
+      }
+      
+      container.innerHTML = attendanceData.students.map((name, index) => `
+        <div class="student-item">
+          <span class="student-name">${index + 1}. ${name}</span>
+          <button class="delete-btn" onclick="removeStudent('${name}')">&times;</button>
+        </div>
+      `).join('');
+    }
+
+    // ========== 수업 시작/종료 ==========
+    
+    function startClass() {
+      if (attendanceData.students.length === 0) {
+        alert('수강생이 등록되어 있지 않습니다.\n운영자에게 문의해주세요.');
+        return;
+      }
+      
+      const week = prompt('몇 주차 수업인가요? (1-16)', attendanceData.currentWeek);
+      if (!week) return;
+      
+      const weekNum = parseInt(week);
+      if (isNaN(weekNum) || weekNum < 1 || weekNum > 16) {
+        alert('1-16 사이의 숫자를 입력해주세요.');
+        return;
+      }
+      
+      attendanceData.currentWeek = weekNum;
+      attendanceData.classStartTime = new Date();
+      attendanceData.classEndTime = null;
+      attendanceData.isClassActive = true;
+      
+      // 해당 주차 출석 기록 초기화
+      if (!attendanceData.records[weekNum]) {
+        attendanceData.records[weekNum] = {};
+      }
+      
+      // 모든 학생 결석으로 초기화
+      attendanceData.students.forEach(name => {
+        if (!attendanceData.records[weekNum][name]) {
+          attendanceData.records[weekNum][name] = {
+            joinTime: null,
+            leaveTime: null,
+            status: 'absent'
+          };
+        }
+      });
+      
+      saveAttendanceData();
+      updateClassUI();
+      
+      alert(`${weekNum}주차 수업이 시작되었습니다!\n시작 시간: ${formatTime(attendanceData.classStartTime)}`);
+    }
+
+    function endClass() {
+      if (!confirm('수업을 종료하시겠습니까?')) return;
+      
+      attendanceData.classEndTime = new Date();
+      attendanceData.isClassActive = false;
+      
+      // 출석 상태 최종 계산
+      calculateFinalAttendance();
+      
+      saveAttendanceData();
+      updateClassUI();
+      
+      // 출석 결과 표시
+      openAttendanceModal();
+      alert(`수업이 종료되었습니다!\n종료 시간: ${formatTime(attendanceData.classEndTime)}`);
+    }
+
+    function calculateFinalAttendance() {
+      const week = attendanceData.currentWeek;
+      const records = attendanceData.records[week];
+      const startTime = attendanceData.classStartTime;
+      const endTime = attendanceData.classEndTime;
+      const lateThreshold = 15 * 60 * 1000; // 15분 (밀리초)
+      
+      attendanceData.students.forEach(name => {
+        const record = records[name];
+        if (!record) return;
+        
+        if (!record.joinTime) {
+          // 입장 기록 없음 = 결석
+          record.status = 'absent';
+        } else {
+          const joinTime = new Date(record.joinTime);
+          const leaveTime = record.leaveTime ? new Date(record.leaveTime) : endTime;
+          const joinDelay = joinTime - startTime;
+          
+          if (leaveTime < endTime) {
+            // 수업 종료 전에 나감 = 조퇴
+            record.status = 'early-leave';
+          } else if (joinDelay > lateThreshold) {
+            // 15분 이후 입장 = 지각 (하지만 15분 이후도 참여했으면 지각 처리)
+            record.status = 'late';
+          } else if (joinDelay > 0 && joinDelay <= lateThreshold) {
+            // 수업 시작 후 15분 이내 입장 = 지각
+            record.status = 'late';
+          } else {
+            // 정상 출석
+            record.status = 'present';
+          }
+        }
+      });
+      
+      saveAttendanceData();
+    }
+
+    function updateClassUI() {
+      const btnStart = document.getElementById('btnStartClass');
+      const btnEnd = document.getElementById('btnEndClass');
+      const statusDot = document.getElementById('statusDot');
+      const statusText = document.getElementById('classStatusText');
+      
+      if (attendanceData.isClassActive) {
+        btnStart.disabled = true;
+        btnEnd.disabled = false;
+        statusDot.classList.add('live');
+        statusText.textContent = `${attendanceData.currentWeek}주차 수업 진행중`;
+      } else {
+        btnStart.disabled = false;
+        btnEnd.disabled = true;
+        statusDot.classList.remove('live');
+        statusText.textContent = '수업 대기중';
+      }
+    }
+
+    // ========== 학생 입장/퇴장 기록 ==========
+    
+    function recordStudentJoin(studentName) {
+      if (!attendanceData.isClassActive) return;
+      
+      const week = attendanceData.currentWeek;
+      if (!attendanceData.records[week]) {
+        attendanceData.records[week] = {};
+      }
+      
+      if (!attendanceData.records[week][studentName]) {
+        attendanceData.records[week][studentName] = {
+          joinTime: null,
+          leaveTime: null,
+          status: 'absent'
+        };
+      }
+      
+      // 첫 입장 시간만 기록
+      if (!attendanceData.records[week][studentName].joinTime) {
+        attendanceData.records[week][studentName].joinTime = new Date();
+      }
+      
+      saveAttendanceData();
+    }
+
+    function recordStudentLeave(studentName) {
+      if (!attendanceData.isClassActive) return;
+      
+      const week = attendanceData.currentWeek;
+      if (attendanceData.records[week] && attendanceData.records[week][studentName]) {
+        attendanceData.records[week][studentName].leaveTime = new Date();
+        saveAttendanceData();
+      }
+    }
+
+    // ========== 출석부 표시 ==========
+    
+    function openAttendanceModal() {
+      document.getElementById('attendanceModal').classList.add('show');
+      document.getElementById('weekSelect').value = attendanceData.currentWeek;
+      renderAttendanceTable();
+    }
+
+    function closeAttendanceModal() {
+      document.getElementById('attendanceModal').classList.remove('show');
+    }
+
+    function renderAttendanceTable() {
+      const week = parseInt(document.getElementById('weekSelect').value);
+      const tbody = document.getElementById('attendanceTableBody');
+      const records = attendanceData.records[week] || {};
+      
+      if (attendanceData.students.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#6b7280;padding:30px;">등록된 수강생이 없습니다.</td></tr>';
+        document.getElementById('attendanceSummary').innerHTML = '';
+        return;
+      }
+      
+      let presentCount = 0, lateCount = 0, earlyLeaveCount = 0, absentCount = 0;
+      
+      tbody.innerHTML = attendanceData.students.map((name, index) => {
+        const record = records[name] || { joinTime: null, leaveTime: null, status: 'pending' };
+        const status = record.status || 'pending';
+        
+        // 카운트
+        if (status === 'present') presentCount++;
+        else if (status === 'late') lateCount++;
+        else if (status === 'early-leave') earlyLeaveCount++;
+        else if (status === 'absent') absentCount++;
+        
+        const statusLabel = {
+          'present': '출석',
+          'late': '지각',
+          'early-leave': '조퇴',
+          'absent': '결석',
+          'pending': '미정'
+        };
+        
+        return `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${name}</td>
+            <td class="time-info">${record.joinTime ? formatTime(new Date(record.joinTime)) : '-'}</td>
+            <td class="time-info">${record.leaveTime ? formatTime(new Date(record.leaveTime)) : '-'}</td>
+            <td>
+              <span class="attendance-status ${status}">${statusLabel[status]}</span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      
+      // 요약 표시
+      document.getElementById('attendanceSummary').innerHTML = `
+        <div class="summary-item">
+          <span class="attendance-status present">출석</span>
+          <span class="count">${presentCount}명</span>
+        </div>
+        <div class="summary-item">
+          <span class="attendance-status late">지각</span>
+          <span class="count">${lateCount}명</span>
+        </div>
+        <div class="summary-item">
+          <span class="attendance-status early-leave">조퇴</span>
+          <span class="count">${earlyLeaveCount}명</span>
+        </div>
+        <div class="summary-item">
+          <span class="attendance-status absent">결석</span>
+          <span class="count">${absentCount}명</span>
+        </div>
+        <div class="summary-item" style="margin-left:auto;">
+          총 <span class="count">${attendanceData.students.length}명</span>
+        </div>
+      `;
+    }
+
+    function exportAttendance() {
+      const week = document.getElementById('weekSelect').value;
+      const records = attendanceData.records[week] || {};
+      
+      let csv = '번호,이름,입장시간,퇴장시간,출석상태\n';
+      
+      attendanceData.students.forEach((name, index) => {
+        const record = records[name] || {};
+        const statusLabel = {
+          'present': '출석',
+          'late': '지각',
+          'early-leave': '조퇴',
+          'absent': '결석',
+          'pending': '미정'
+        };
+        
+        csv += `${index + 1},${name},`;
+        csv += `${record.joinTime ? formatTime(new Date(record.joinTime)) : '-'},`;
+        csv += `${record.leaveTime ? formatTime(new Date(record.leaveTime)) : '-'},`;
+        csv += `${statusLabel[record.status] || '미정'}\n`;
+      });
+      
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `출석부_${currentUser.course}_${week}주차.csv`;
+      link.click();
+    }
+
+    function formatTime(date) {
+      if (!date) return '-';
+      return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    // ========== UI 업데이트 (교수 컨트롤 표시) ==========
+    
+    const originalUpdateMainUI = updateMainUI;
+    updateMainUI = function() {
+      originalUpdateMainUI();
+      
+      const isProfessor = currentUser.role === 'professor';
+      const professorControls = document.getElementById('professorControls');
+      
+      if (isProfessor) {
+        professorControls.classList.add('show');
+        loadAttendanceData();
+        updateClassUI();
+      } else {
+        professorControls.classList.remove('show');
+        // 학생인 경우 자동 출석 체크 (학생 이름이 수강생 목록에 있는 경우)
+        checkStudentAttendance();
+      }
+    };
+
+    // 학생 자동 출석 체크
+    function checkStudentAttendance() {
+      // 강의 데이터 로드
+      const storageKey = `attendance_${currentUser.course}`;
+      const saved = localStorage.getItem(storageKey);
+      
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (data.isClassActive && data.students.includes(currentUser.name)) {
+          // 학생이 수강생 목록에 있고 수업이 진행 중이면 입장 기록
+          if (!data.records[data.currentWeek]) {
+            data.records[data.currentWeek] = {};
+          }
+          if (!data.records[data.currentWeek][currentUser.name]) {
+            data.records[data.currentWeek][currentUser.name] = {
+              joinTime: null,
+              leaveTime: null,
+              status: 'absent'
+            };
+          }
+          if (!data.records[data.currentWeek][currentUser.name].joinTime) {
+            data.records[data.currentWeek][currentUser.name].joinTime = new Date().toISOString();
+            localStorage.setItem(storageKey, JSON.stringify(data));
+            console.log('출석 체크됨:', currentUser.name);
+          }
+        }
+      }
+    }
+
+    // 학생 퇴장 시 기록 (페이지 떠날 때)
+    window.addEventListener('beforeunload', () => {
+      if (currentUser.role === 'student') {
+        const storageKey = `attendance_${currentUser.course}`;
+        const saved = localStorage.getItem(storageKey);
+        
+        if (saved) {
+          const data = JSON.parse(saved);
+          if (data.isClassActive && data.records[data.currentWeek] && 
+              data.records[data.currentWeek][currentUser.name]) {
+            data.records[data.currentWeek][currentUser.name].leaveTime = new Date().toISOString();
+            localStorage.setItem(storageKey, JSON.stringify(data));
+          }
+        }
+      }
+    });
+
+    // ========== PWA 설치 기능 ==========
+    let deferredPrompt = null;
+
+    // Service Worker 등록
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((registration) => {
+            console.log('Service Worker 등록 성공:', registration.scope);
+          })
+          .catch((error) => {
+            console.log('Service Worker 등록 실패:', error);
+          });
+      });
+    }
+
+    // 설치 프롬프트 이벤트 캡처 (Android/Chrome/Edge)
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      
+      // 설치 버튼 표시
+      const installBtn = document.getElementById('installBtn');
+      installBtn.classList.add('show');
+    });
+
+    // iOS 감지 및 가이드 표시
+    function isIOS() {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    }
+
+    function isInStandaloneMode() {
+      return window.matchMedia('(display-mode: standalone)').matches || 
+             window.navigator.standalone === true;
+    }
+
+    // iOS에서 Safari 브라우저인 경우 가이드 표시
+    if (isIOS() && !isInStandaloneMode()) {
+      const iosGuide = document.getElementById('iosGuide');
+      iosGuide.classList.add('show');
+    }
+
+    // 앱 설치 함수
+    async function installApp() {
+      if (!deferredPrompt) {
+        alert('이미 설치되었거나 설치할 수 없는 환경입니다.');
+        return;
+      }
+
+      // 설치 프롬프트 표시
+      deferredPrompt.prompt();
+      
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log('설치 결과:', outcome);
+      
+      if (outcome === 'accepted') {
+        document.getElementById('installBtn').classList.remove('show');
+      }
+      
+      deferredPrompt = null;
+    }
+
+    // 설치 완료 이벤트
+    window.addEventListener('appinstalled', () => {
+      console.log('앱이 설치되었습니다!');
+      document.getElementById('installBtn').classList.remove('show');
+      deferredPrompt = null;
     });
   </script>
 </body>
