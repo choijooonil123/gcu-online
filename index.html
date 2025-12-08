@@ -1151,6 +1151,7 @@
           <button class="header-btn primary" id="btnStartClass" onclick="startClass()">▶️ 수업시작</button>
           <button class="header-btn danger" id="btnEndClass" onclick="endClass()" disabled>⏹️ 수업종료</button>
           <button class="header-btn" onclick="openAttendanceModal()">📋 출석부</button>
+          <button class="header-btn" onclick="openProfCourseModal()">📚 강의관리</button>
           <span class="header-status" id="headerClassStatus">
             <span class="status-dot" id="statusDot"></span>
             <span id="classStatusText">수업 대기중</span>
@@ -1426,6 +1427,41 @@
       </div>
       <div class="modal-footer">
         <button class="ctrl-btn" onclick="closeMyAttendanceModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 강의 관리 모달 (교수용) ========== -->
+  <div class="modal-overlay" id="profCourseModal">
+    <div class="modal" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2>📚 내 강의 관리</h2>
+        <button class="modal-close" onclick="closeProfCourseModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="background:#1e293b;padding:16px;border-radius:12px;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+            <span style="font-size:32px;">📖</span>
+            <div>
+              <div style="font-size:14px;color:#9ca3af;">현재 강의</div>
+              <div style="font-size:20px;font-weight:600;color:#60a5fa;" id="profCourseName">-</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:20px;font-size:14px;color:#9ca3af;">
+            <span>👨‍🏫 담당: <strong style="color:#f1f5f9;" id="profCourseProf">-</strong></span>
+            <span>👥 수강생: <strong style="color:#f1f5f9;" id="profCourseCount">0</strong>명</span>
+          </div>
+        </div>
+        
+        <div class="admin-form-group">
+          <label style="font-size:15px;font-weight:600;color:#f1f5f9;">📝 수강생 명단 관리</label>
+          <textarea id="profStudentList" style="min-height:200px;"></textarea>
+          <div class="help-text">한 줄에 한 명씩 입력해주세요. 학생 추가/삭제 후 저장 버튼을 눌러주세요.</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="ctrl-btn" onclick="closeProfCourseModal()">취소</button>
+        <button class="ctrl-btn success" onclick="saveProfCourseEdit()">💾 저장</button>
       </div>
     </div>
   </div>
@@ -2013,6 +2049,74 @@
       saveCourseData();
       renderCourseList();
       alert('강의가 삭제되었습니다.');
+    }
+
+    // ========== 강의 관리 (교수용) ==========
+    
+    function openProfCourseModal() {
+      // 현재 교수의 강의 정보 가져오기
+      const myCourse = courseData.find(c => c.name === currentUser.course && c.professor === currentUser.name);
+      
+      if (!myCourse) {
+        alert('현재 담당하고 계신 강의 정보를 찾을 수 없습니다.');
+        return;
+      }
+      
+      document.getElementById('profCourseName').textContent = myCourse.name;
+      document.getElementById('profCourseProf').textContent = myCourse.professor;
+      document.getElementById('profCourseCount').textContent = myCourse.students.length;
+      document.getElementById('profStudentList').value = myCourse.students.join('\n');
+      
+      document.getElementById('profCourseModal').classList.add('show');
+    }
+    
+    function closeProfCourseModal() {
+      document.getElementById('profCourseModal').classList.remove('show');
+    }
+    
+    function saveProfCourseEdit() {
+      const studentText = document.getElementById('profStudentList').value.trim();
+      const students = studentText ? studentText.split('\n').map(s => s.trim()).filter(s => s) : [];
+      
+      // 현재 교수의 강의 찾기
+      const courseIndex = courseData.findIndex(c => c.name === currentUser.course && c.professor === currentUser.name);
+      
+      if (courseIndex === -1) {
+        alert('강의 정보를 찾을 수 없습니다.');
+        return;
+      }
+      
+      // 수강생 명단만 업데이트
+      courseData[courseIndex].students = students;
+      saveCourseData();
+      
+      // 출석 데이터도 업데이트
+      const attendanceKey = `attendance_${currentUser.course}`;
+      const attendanceData = localStorage.getItem(attendanceKey);
+      if (attendanceData) {
+        const data = JSON.parse(attendanceData);
+        data.students = students;
+        localStorage.setItem(attendanceKey, JSON.stringify(data));
+      }
+      
+      // Firebase 출석 데이터도 업데이트
+      if (firebaseEnabled) {
+        loadAttendanceData(currentUser.course).then(fbData => {
+          if (fbData) {
+            fbData.students = students;
+            saveAttendanceData(currentUser.course, fbData);
+          }
+        });
+      }
+      
+      // UI 업데이트
+      document.getElementById('profCourseCount').textContent = students.length;
+      
+      alert(`수강생 명단이 저장되었습니다. (${students.length}명)`);
+      closeProfCourseModal();
+      
+      // 출석부 데이터 새로고침
+      loadAttendanceDataLocal();
     }
 
     function openAllAttendanceModal() {
