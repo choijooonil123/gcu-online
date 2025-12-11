@@ -1579,6 +1579,8 @@
     let recordedChunks = [];
     let recordingStream = null;
     let currentSession = 1;  // 현재 차시
+    let recordingMimeType = 'video/mp4';  // 녹화 형식
+    let recordingExtension = 'mpeg';  // 파일 확장자
 
     // 강의 데이터 (운영자가 관리)
     let courseData = [];  // { id, name, professor, students: [] }
@@ -3067,14 +3069,28 @@
         recordingStream = combinedStream;
         recordedChunks = [];
 
-        // MediaRecorder 생성
-        const options = { mimeType: 'video/webm;codecs=vp9,opus' };
-        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+        // MediaRecorder 생성 (MP4 우선, 미지원 시 WebM 폴백)
+        let options = { mimeType: 'video/mp4;codecs=avc1,mp4a.40.2' };
+        
+        // 코덱 선택 (MP4 우선, WebM 폴백) - 확장자는 .mpeg으로 통일
+        if (MediaRecorder.isTypeSupported(options.mimeType)) {
+          recordingMimeType = 'video/mp4';
+        } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+          options.mimeType = 'video/mp4';
+          recordingMimeType = 'video/mp4';
+        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
+          options.mimeType = 'video/webm;codecs=vp9,opus';
+          recordingMimeType = 'video/webm';
+        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')) {
           options.mimeType = 'video/webm;codecs=vp8,opus';
-        }
-        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+          recordingMimeType = 'video/webm';
+        } else {
           options.mimeType = 'video/webm';
+          recordingMimeType = 'video/webm';
         }
+        recordingExtension = 'mpeg';  // 확장자는 항상 .mpeg
+        
+        console.log('🎥 녹화 형식:', options.mimeType);
 
         mediaRecorder = new MediaRecorder(combinedStream, options);
         
@@ -3142,14 +3158,14 @@
         return;
       }
 
-      const blob = new Blob(recordedChunks, { type: 'video/webm' });
-      console.log('🎥 Blob 생성됨, 크기:', blob.size, 'bytes');
+      const blob = new Blob(recordedChunks, { type: recordingMimeType });
+      console.log('🎥 Blob 생성됨, 크기:', blob.size, 'bytes, 형식:', recordingMimeType);
       
-      // 파일명 생성: 주차수-차시수. 강의명 주차수주차 차시수차시.webm
+      // 파일명 생성: 주차수-차시수. 강의명 주차수주차 차시수차시.확장자
       const courseName = currentUser?.course || '수업';
       const week = attendanceData.currentWeek || 1;
       const session = currentSession || 1;
-      const fileName = `${week}-${session}. ${courseName} ${week}주차 ${session}차시.webm`;
+      const fileName = `${week}-${session}. ${courseName} ${week}주차 ${session}차시.${recordingExtension}`;
       
       console.log('🎥 저장할 파일명:', fileName);
 
@@ -3158,12 +3174,11 @@
       // File System Access API 지원 여부 확인 (저장 위치 선택 가능)
       if ('showSaveFilePicker' in window) {
         try {
+          const fileTypes = [{ description: 'MPEG 비디오 파일', accept: { 'video/mpeg': ['.mpeg'] } }];
+          
           const fileHandle = await window.showSaveFilePicker({
             suggestedName: fileName,
-            types: [{
-              description: 'WebM 비디오 파일',
-              accept: { 'video/webm': ['.webm'] }
-            }]
+            types: fileTypes
           });
           
           const writable = await fileHandle.createWritable();
