@@ -560,6 +560,19 @@
       50% { opacity: 0.5; }
     }
 
+    /* 녹화 종료 버튼 */
+    .stop-recording-btn {
+      background: #dc2626 !important;
+      border-color: #dc2626 !important;
+      color: white !important;
+      margin-left: 8px;
+      animation: recording-pulse 1.5s ease-in-out infinite;
+    }
+
+    .stop-recording-btn:hover {
+      background: #b91c1c !important;
+    }
+
     .header-btn.success {
       background: #16a34a;
       border-color: #16a34a;
@@ -1247,6 +1260,7 @@
             <span class="status-dot" id="statusDot"></span>
             <span id="classStatusText">수업 대기중</span>
             <span class="recording-indicator" id="recordingIndicator" style="display:none;">🔴 녹화중</span>
+            <button class="header-btn stop-recording-btn" id="btnStopRecording" onclick="stopRecordingManual()" style="display:none;">⏹️ 녹화종료</button>
           </span>
       </div>
         <!-- 학생 전용 버튼 (배지 왼쪽) -->
@@ -3135,6 +3149,7 @@
         
         // UI 업데이트
         document.getElementById('recordingIndicator').style.display = 'inline-flex';
+        document.getElementById('btnStopRecording').style.display = 'inline-block';
         document.getElementById('chkRecordClass').disabled = true;
         
         console.log('🎥 수업 녹화 시작');
@@ -3160,7 +3175,14 @@
       
       // UI 업데이트
       document.getElementById('recordingIndicator').style.display = 'none';
+      document.getElementById('btnStopRecording').style.display = 'none';
       document.getElementById('chkRecordClass').disabled = false;
+    }
+
+    // 수동 녹화 종료 (버튼 클릭)
+    function stopRecordingManual() {
+      if (!confirm('녹화를 종료하시겠습니까?\n(녹화 파일이 저장됩니다)')) return;
+      stopRecording();
     }
 
     async function saveRecording() {
