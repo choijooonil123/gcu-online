@@ -1579,8 +1579,22 @@
     let recordedChunks = [];
     let recordingStream = null;
     let currentSession = 1;  // 현재 차시
+    let sessionCountByWeek = {};  // 주차별 차시 누적 카운트 { 주차: 차시 }
     let recordingMimeType = 'video/mp4';  // 녹화 형식
-    let recordingExtension = 'mpeg';  // 파일 확장자
+    let recordingExtension = 'avi';  // 파일 확장자
+    
+    // 주차별 차시 카운트 로드
+    function loadSessionCount() {
+      const saved = localStorage.getItem('sessionCountByWeek');
+      if (saved) {
+        sessionCountByWeek = JSON.parse(saved);
+      }
+    }
+    
+    // 주차별 차시 카운트 저장
+    function saveSessionCount() {
+      localStorage.setItem('sessionCountByWeek', JSON.stringify(sessionCountByWeek));
+    }
 
     // 강의 데이터 (운영자가 관리)
     let courseData = [];  // { id, name, professor, students: [] }
@@ -3088,7 +3102,7 @@
           options.mimeType = 'video/webm';
           recordingMimeType = 'video/webm';
         }
-        recordingExtension = 'mpeg';  // 확장자는 항상 .mpeg
+        recordingExtension = 'avi';  // 확장자는 항상 .avi
         
         console.log('🎥 녹화 형식:', options.mimeType);
 
@@ -3174,7 +3188,7 @@
       // File System Access API 지원 여부 확인 (저장 위치 선택 가능)
       if ('showSaveFilePicker' in window) {
         try {
-          const fileTypes = [{ description: 'MPEG 비디오 파일', accept: { 'video/mpeg': ['.mpeg'] } }];
+          const fileTypes = [{ description: 'AVI 비디오 파일', accept: { 'video/x-msvideo': ['.avi'] } }];
           
           const fileHandle = await window.showSaveFilePicker({
             suggestedName: fileName,
@@ -3226,6 +3240,9 @@
         return;
       }
       
+      // 주차별 차시 카운트 로드
+      loadSessionCount();
+      
       const week = prompt('몇 주차 수업인가요? (1-16)', attendanceData.currentWeek);
       if (!week) return;
       
@@ -3235,16 +3252,15 @@
         return;
       }
       
-      const session = prompt('몇 차시 수업인가요? (1-4)', currentSession);
-      if (!session) return;
-      
-      const sessionNum = parseInt(session);
-      if (isNaN(sessionNum) || sessionNum < 1 || sessionNum > 4) {
-        alert('1-4 사이의 숫자를 입력해주세요.');
-        return;
+      // 차시 자동 누적 (해당 주차의 이전 차시 + 1)
+      if (!sessionCountByWeek[weekNum]) {
+        sessionCountByWeek[weekNum] = 0;
       }
+      sessionCountByWeek[weekNum]++;
+      currentSession = sessionCountByWeek[weekNum];
       
-      currentSession = sessionNum;
+      // 차시 카운트 저장
+      saveSessionCount();
       
       // 녹화 체크박스가 체크되어 있으면 녹화 시작
       const shouldRecord = document.getElementById('chkRecordClass')?.checked;
@@ -3283,7 +3299,7 @@
       updateClassUI();
       
       const recordingMsg = mediaRecorder && mediaRecorder.state === 'recording' ? '\n🎥 수업 녹화 중' : '';
-      alert(`${weekNum}주차 ${sessionNum}차시 수업이 시작되었습니다!\n시작 시간: ${formatTime(attendanceData.classStartTime)}${recordingMsg}`);
+      alert(`${weekNum}주차 ${currentSession}차시 수업이 시작되었습니다!\n시작 시간: ${formatTime(attendanceData.classStartTime)}${recordingMsg}`);
     }
 
     function endClass() {
