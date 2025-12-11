@@ -1141,6 +1141,10 @@
         <button type="submit" class="submit-btn" id="submitBtn">
           🚀 강의실 입장
         </button>
+        
+        <button type="button" class="submit-btn" style="background:#374151;margin-top:8px;" onclick="testMicrophonePermission()">
+          🎤 마이크 테스트
+        </button>
     </form>
 
       <!-- PWA 설치 버튼 -->
@@ -1214,8 +1218,8 @@
               현재 강의명: <span class="room-name-display" id="roomNameDisplay">-</span>
               <span id="serverStatus" style="margin-left: 12px; font-size: 12px; color: #60a5fa;"></span>
           </div>
-          <div class="small-note">
-            처음 접속 시 브라우저가 카메라/마이크 권한을 요청하면 <b>허용</b>을 눌러주세요.
+          <div class="small-note" style="color:#fbbf24;">
+            🎤 마이크/카메라 권한을 <b style="color:#4ade80;">반드시 허용</b>해주세요! (주소창 왼쪽 🔒 클릭)
           </div>
         </div>
 
@@ -1896,8 +1900,8 @@
             현재 강의명: <span class="room-name-display" id="roomNameDisplay">-</span>
             <span id="serverStatus" style="margin-left: 12px; font-size: 12px; color: #60a5fa;"></span>
           </div>
-          <div class="small-note">
-            처음 접속 시 브라우저가 카메라/마이크 권한을 요청하면 <b>허용</b>을 눌러주세요.
+          <div class="small-note" style="color:#fbbf24;">
+            🎤 마이크/카메라 권한을 <b style="color:#4ade80;">반드시 허용</b>해주세요! (주소창 왼쪽 🔒 클릭)
           </div>
         `;
       }
@@ -2570,6 +2574,141 @@
       });
     }
 
+    // ========== 마이크/카메라 권한 강화 요청 ==========
+    
+    // 마이크 테스트 버튼 핸들러
+    async function testMicrophonePermission() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          },
+          video: true
+        });
+        
+        // 마이크 레벨 표시
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const analyser = audioContext.createAnalyser();
+        const microphone = audioContext.createMediaStreamSource(stream);
+        microphone.connect(analyser);
+        analyser.fftSize = 256;
+        
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        
+        let maxLevel = 0;
+        const checkLevel = setInterval(() => {
+          analyser.getByteFrequencyData(dataArray);
+          const avg = dataArray.reduce((a, b) => a + b) / bufferLength;
+          if (avg > maxLevel) maxLevel = avg;
+        }, 100);
+        
+        setTimeout(() => {
+          clearInterval(checkLevel);
+          stream.getTracks().forEach(track => track.stop());
+          audioContext.close();
+          
+          if (maxLevel > 10) {
+            alert(`✅ 마이크 테스트 성공!\n\n마이크 레벨: ${Math.round(maxLevel)}%\n마이크가 정상적으로 작동하고 있습니다.`);
+          } else {
+            alert(`⚠️ 마이크 테스트 결과\n\n마이크 권한은 허용되었지만 소리가 감지되지 않았습니다.\n마이크에 대고 말해보시거나 마이크 연결을 확인해주세요.`);
+          }
+        }, 3000);
+        
+        alert('🎤 마이크 테스트 중...\n\n3초 동안 마이크에 대고 말해주세요!');
+        
+      } catch (error) {
+        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+          alert(
+            '❌ 마이크 권한이 거부되었습니다!\n\n' +
+            '해결 방법:\n' +
+            '1. 브라우저 주소창 왼쪽의 🔒 또는 ⓘ 아이콘 클릭\n' +
+            '2. "카메라"와 "마이크"를 "허용"으로 변경\n' +
+            '3. 페이지 새로고침 (F5)\n\n' +
+            'Chrome 설정 → 개인정보 및 보안 → 사이트 설정 에서도 변경 가능합니다.'
+          );
+        } else if (error.name === 'NotFoundError') {
+          alert('❌ 마이크를 찾을 수 없습니다!\n\n마이크가 컴퓨터에 연결되어 있는지 확인해주세요.');
+        } else {
+          alert(`❌ 마이크 테스트 오류: ${error.message}`);
+        }
+      }
+    }
+    
+    async function requestMediaPermissions() {
+      const loadingEl = document.getElementById('jitsiLoading');
+      const debugInfo = document.getElementById('debugInfo');
+      
+      // 로딩 표시
+      if (loadingEl) {
+        loadingEl.style.display = 'block';
+      }
+      if (debugInfo) {
+        debugInfo.textContent = '🎤 마이크/카메라 권한을 요청하고 있습니다...';
+      }
+      updateServerStatus('🎤 마이크 권한 확인 중...');
+      
+      try {
+        // 마이크와 카메라 권한 요청 (Chrome 스타일의 강제 요청)
+        console.log('🎤 미디어 권한 요청 시작...');
+        
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          },
+          video: true
+        });
+        
+        console.log('✅ 미디어 권한 획득 성공');
+        
+        // 권한을 얻은 후 스트림 해제 (Jitsi가 사용할 수 있도록)
+        stream.getTracks().forEach(track => {
+          track.stop();
+          console.log(`  - ${track.kind} 트랙 해제`);
+        });
+        
+        updateServerStatus('✅ 마이크/카메라 권한 확보 완료');
+        return true;
+        
+      } catch (error) {
+        console.warn('⚠️ 미디어 권한 요청 실패:', error.name, error.message);
+        
+        // 권한 거부된 경우
+        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+          updateServerStatus('⚠️ 마이크/카메라 권한이 거부됨', true);
+          
+          const retry = confirm(
+            '🎤 마이크/카메라 권한이 필요합니다!\n\n' +
+            '브라우저 주소창 왼쪽의 🔒 또는 ⓘ 아이콘을 클릭하여\n' +
+            '카메라와 마이크 권한을 "허용"으로 변경해주세요.\n\n' +
+            '설정 변경 후 확인을 눌러주세요.'
+          );
+          
+          if (retry) {
+            // 재시도
+            return await requestMediaPermissions();
+          }
+          return false;
+        }
+        
+        // 기기를 찾을 수 없는 경우
+        if (error.name === 'NotFoundError') {
+          updateServerStatus('⚠️ 마이크/카메라를 찾을 수 없음');
+          alert('🎤 마이크 또는 카메라를 찾을 수 없습니다.\n기기가 연결되어 있는지 확인해주세요.');
+          return false;
+        }
+        
+        // 기타 오류
+        updateServerStatus('⚠️ 미디어 오류 - 계속 진행...');
+        console.log('  - 오류가 있지만 Jitsi 로딩 계속 진행');
+        return true; // 오류가 있어도 Jitsi 로딩 시도
+      }
+    }
+    
     // 강의실 로딩
     async function loadRoom(roomName) {
       console.log('🎓 loadRoom 호출됨:', roomName);
@@ -2577,6 +2716,14 @@
       if (!roomName || roomName.trim() === '') {
         console.error('❌ loadRoom: 강의명이 비어있음');
         alert('강의명이 설정되지 않았습니다.');
+        return;
+      }
+      
+      // 마이크/카메라 권한 먼저 요청
+      const hasPermission = await requestMediaPermissions();
+      if (!hasPermission) {
+        console.log('❌ 미디어 권한 없음 - 강의실 로딩 중단');
+        document.getElementById('jitsiLoading').style.display = 'none';
         return;
       }
       
@@ -3748,3 +3895,4 @@
   </script>
 </body>
 </html>
+
