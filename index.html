@@ -499,6 +499,67 @@
       cursor: not-allowed;
     }
 
+    /* 수업녹화 체크박스 스타일 */
+    .record-checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .record-checkbox-label:hover {
+      background: #374151;
+      border-color: #4b5563;
+    }
+
+    .record-checkbox-label input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #ef4444;
+      cursor: pointer;
+    }
+
+    .record-checkbox-text {
+      font-size: 12px;
+      color: #e5e7eb;
+      white-space: nowrap;
+    }
+
+    .record-checkbox-label:has(input:checked) {
+      border-color: #ef4444;
+      background: rgba(239, 68, 68, 0.15);
+    }
+
+    .record-checkbox-label:has(input:checked) .record-checkbox-text {
+      color: #fca5a5;
+    }
+
+    /* 녹화중 인디케이터 */
+    .recording-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: 8px;
+      padding: 4px 8px;
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid #ef4444;
+      border-radius: 4px;
+      font-size: 11px;
+      color: #fca5a5;
+      animation: recording-pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes recording-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
     .header-btn.success {
       background: #16a34a;
       border-color: #16a34a;
@@ -1174,6 +1235,10 @@
       <div class="user-info">
         <!-- 교수 전용 버튼 (배지 왼쪽) -->
         <div class="professor-header-btns" id="professorHeaderBtns">
+          <label class="record-checkbox-label" title="수업 시작과 동시에 화면을 녹화합니다">
+            <input type="checkbox" id="chkRecordClass" checked>
+            <span class="record-checkbox-text">🎥 수업녹화</span>
+          </label>
           <button class="header-btn primary" id="btnStartClass" onclick="startClass()">▶️ 수업시작</button>
           <button class="header-btn danger" id="btnEndClass" onclick="endClass()" disabled>⏹️ 수업종료</button>
           <button class="header-btn" onclick="openAttendanceModal()">📋 출석부</button>
@@ -1181,6 +1246,7 @@
           <span class="header-status" id="headerClassStatus">
             <span class="status-dot" id="statusDot"></span>
             <span id="classStatusText">수업 대기중</span>
+            <span class="recording-indicator" id="recordingIndicator" style="display:none;">🔴 녹화중</span>
           </span>
       </div>
         <!-- 학생 전용 버튼 (배지 왼쪽) -->
@@ -1507,6 +1573,11 @@
       name: '',
       course: ''
     };
+
+    // ========== 수업 녹화 관련 변수 ==========
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let recordingStream = null;
 
     // 강의 데이터 (운영자가 관리)
     let courseData = [];  // { id, name, professor, students: [] }
@@ -2955,9 +3026,142 @@
       `).join('');
     }
 
+    // ========== 수업 녹화 기능 ==========
+    
+    async function startRecording() {
+      try {
+        // 화면 + 오디오 스트림 요청
+        const displayStream = await navigator.mediaDevices.getDisplayMedia({
+          video: {
+            displaySurface: 'browser',
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            frameRate: { ideal: 30 }
+          },
+          audio: true
+        });
+
+        // 마이크 오디오 추가 시도
+        let combinedStream = displayStream;
+        try {
+          const audioStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true
+            }
+          });
+          
+          // 스트림 합성
+          const audioTracks = [
+            ...displayStream.getAudioTracks(),
+            ...audioStream.getAudioTracks()
+          ];
+          const videoTracks = displayStream.getVideoTracks();
+          
+          combinedStream = new MediaStream([...videoTracks, ...audioTracks]);
+        } catch (audioErr) {
+          console.log('마이크 접근 실패, 화면 오디오만 녹화:', audioErr);
+        }
+
+        recordingStream = combinedStream;
+        recordedChunks = [];
+
+        // MediaRecorder 생성
+        const options = { mimeType: 'video/webm;codecs=vp9,opus' };
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+          options.mimeType = 'video/webm;codecs=vp8,opus';
+        }
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+          options.mimeType = 'video/webm';
+        }
+
+        mediaRecorder = new MediaRecorder(combinedStream, options);
+        
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) {
+            recordedChunks.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          saveRecording();
+        };
+
+        // 화면 공유 종료 시 녹화도 중지
+        displayStream.getVideoTracks()[0].onended = () => {
+          if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            stopRecording();
+          }
+        };
+
+        mediaRecorder.start(1000); // 1초마다 데이터 수집
+        
+        // UI 업데이트
+        document.getElementById('recordingIndicator').style.display = 'inline-flex';
+        document.getElementById('chkRecordClass').disabled = true;
+        
+        console.log('🎥 수업 녹화 시작');
+        return true;
+      } catch (err) {
+        console.error('녹화 시작 실패:', err);
+        alert('화면 녹화를 시작할 수 없습니다.\n화면 공유를 허용해주세요.');
+        return false;
+      }
+    }
+
+    function stopRecording() {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+        console.log('🎥 수업 녹화 종료');
+      }
+      
+      // 스트림 정리
+      if (recordingStream) {
+        recordingStream.getTracks().forEach(track => track.stop());
+        recordingStream = null;
+      }
+      
+      // UI 업데이트
+      document.getElementById('recordingIndicator').style.display = 'none';
+      document.getElementById('chkRecordClass').disabled = false;
+    }
+
+    function saveRecording() {
+      if (recordedChunks.length === 0) {
+        console.log('저장할 녹화 데이터가 없습니다.');
+        return;
+      }
+
+      const blob = new Blob(recordedChunks, { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      
+      // 파일명 생성: 강의명_주차_날짜시간.webm
+      const courseName = currentCourse?.name || '수업';
+      const week = attendanceData.currentWeek || 1;
+      const now = new Date();
+      const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+      const timeStr = now.toTimeString().slice(0, 5).replace(':', '');
+      const fileName = `${courseName}_${week}주차_${dateStr}_${timeStr}.webm`;
+
+      // 다운로드
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      // URL 해제
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+      
+      recordedChunks = [];
+      console.log('🎥 녹화 파일 저장 완료:', fileName);
+      alert(`수업 녹화가 저장되었습니다!\n파일명: ${fileName}`);
+    }
+
     // ========== 수업 시작/종료 ==========
     
-    function startClass() {
+    async function startClass() {
       if (attendanceData.students.length === 0) {
         alert('수강생이 등록되어 있지 않습니다.\n운영자에게 문의해주세요.');
         return;
@@ -2970,6 +3174,18 @@
       if (isNaN(weekNum) || weekNum < 1 || weekNum > 16) {
         alert('1-16 사이의 숫자를 입력해주세요.');
         return;
+      }
+      
+      // 녹화 체크박스가 체크되어 있으면 녹화 시작
+      const shouldRecord = document.getElementById('chkRecordClass')?.checked;
+      if (shouldRecord) {
+        const recordingStarted = await startRecording();
+        if (!recordingStarted) {
+          // 녹화 시작 실패 시 수업 시작 여부 확인
+          if (!confirm('화면 녹화를 시작하지 못했습니다.\n녹화 없이 수업을 시작하시겠습니까?')) {
+            return;
+          }
+        }
       }
       
       attendanceData.currentWeek = weekNum;
@@ -2996,11 +3212,22 @@
       saveAttendanceDataLocal();
       updateClassUI();
       
-      alert(`${weekNum}주차 수업이 시작되었습니다!\n시작 시간: ${formatTime(attendanceData.classStartTime)}`);
+      const recordingMsg = mediaRecorder && mediaRecorder.state === 'recording' ? '\n🎥 수업 녹화 중' : '';
+      alert(`${weekNum}주차 수업이 시작되었습니다!\n시작 시간: ${formatTime(attendanceData.classStartTime)}${recordingMsg}`);
     }
 
     function endClass() {
-      if (!confirm('수업을 종료하시겠습니까?')) return;
+      const isRecording = mediaRecorder && mediaRecorder.state === 'recording';
+      const confirmMsg = isRecording 
+        ? '수업을 종료하시겠습니까?\n(녹화 파일이 자동으로 저장됩니다)' 
+        : '수업을 종료하시겠습니까?';
+      
+      if (!confirm(confirmMsg)) return;
+      
+      // 녹화 중이면 녹화 종료
+      if (isRecording) {
+        stopRecording();
+      }
       
       attendanceData.classEndTime = new Date();
       attendanceData.isClassActive = false;
