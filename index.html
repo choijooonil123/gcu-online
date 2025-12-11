@@ -3084,8 +3084,14 @@
           }
         };
 
-        mediaRecorder.onstop = () => {
-          saveRecording();
+        mediaRecorder.onstop = async () => {
+          console.log('🎥 mediaRecorder.onstop 이벤트 발생');
+          try {
+            await saveRecording();
+          } catch (err) {
+            console.error('🎥 saveRecording 오류:', err);
+            alert('녹화 저장 중 오류가 발생했습니다: ' + err.message);
+          }
         };
 
         // 화면 공유 종료 시 녹화도 중지
@@ -3128,18 +3134,26 @@
     }
 
     async function saveRecording() {
+      console.log('🎥 saveRecording 호출됨, chunks:', recordedChunks.length);
+      
       if (recordedChunks.length === 0) {
         console.log('저장할 녹화 데이터가 없습니다.');
+        alert('저장할 녹화 데이터가 없습니다.\n녹화가 정상적으로 시작되지 않았을 수 있습니다.');
         return;
       }
 
       const blob = new Blob(recordedChunks, { type: 'video/webm' });
+      console.log('🎥 Blob 생성됨, 크기:', blob.size, 'bytes');
       
-      // 파일명 생성: 주차수-차시수 강의명 주차수주차 차시수차시.webm
-      const courseName = currentCourse?.name || '수업';
+      // 파일명 생성: 주차수-차시수. 강의명 주차수주차 차시수차시.webm
+      const courseName = currentUser?.course || '수업';
       const week = attendanceData.currentWeek || 1;
       const session = currentSession || 1;
       const fileName = `${week}-${session}. ${courseName} ${week}주차 ${session}차시.webm`;
+      
+      console.log('🎥 저장할 파일명:', fileName);
+
+      let saved = false;
 
       // File System Access API 지원 여부 확인 (저장 위치 선택 가능)
       if ('showSaveFilePicker' in window) {
@@ -3156,36 +3170,37 @@
           await writable.write(blob);
           await writable.close();
           
+          saved = true;
           recordedChunks = [];
-          console.log('🎥 녹화 파일 저장 완료:', fileName);
+          console.log('🎥 녹화 파일 저장 완료 (위치 선택):', fileHandle.name);
           alert(`수업 녹화가 저장되었습니다!\n파일명: ${fileHandle.name}`);
-          return;
         } catch (err) {
-          // 사용자가 취소한 경우
-          if (err.name === 'AbortError') {
-            console.log('사용자가 저장을 취소했습니다.');
-            // 기존 방식으로 폴백
-          } else {
-            console.error('파일 저장 오류:', err);
-          }
+          console.log('파일 저장 오류 또는 취소:', err.name, err.message);
+          // 취소하거나 오류 시 폴백으로 진행
         }
       }
       
-      // 폴백: 기존 다운로드 방식 (저장 위치 선택 미지원 브라우저)
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      
-      // URL 해제
-      setTimeout(() => URL.revokeObjectURL(url), 100);
-      
-      recordedChunks = [];
-      console.log('🎥 녹화 파일 저장 완료:', fileName);
-      alert(`수업 녹화가 저장되었습니다!\n파일명: ${fileName}`);
+      // 폴백: 기존 다운로드 방식
+      if (!saved) {
+        console.log('🎥 폴백 다운로드 방식 사용');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        
+        // 약간의 지연 후 정리
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 1000);
+        
+        recordedChunks = [];
+        console.log('🎥 녹화 파일 다운로드 완료:', fileName);
+        alert(`수업 녹화가 다운로드 폴더에 저장되었습니다!\n파일명: ${fileName}`);
+      }
     }
 
     // ========== 수업 시작/종료 ==========
